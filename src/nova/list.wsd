@@ -1,0 +1,61 @@
+# nova list
+
+title List Server Workflow
+
+participant client
+participant nova_api
+participant nova_compute_api
+participant objects
+participant db_api
+participant database
+
+# nova/api/openstack/compute/servers.py
+client -> nova_api: GET "/servers"
+activate client
+activate nova_api
+note over nova_api: update search options
+note over nova_api: remove invalid search options
+note over nova_api: update search options by status
+note over nova_api: update search options by changes-since
+note over nova_api: update search options by deleted
+note over nova_api: update search options by all_tenants
+note over nova_api: update search options' project_id and user from context
+note over nova_api: get limit and page maker
+
+# nova/compute/api.py
+nova_api->+nova_compute_api:get_all()
+note over nova_compute_api:check search options
+note over nova_compute_api: build filter mapping
+note over nova_compute_api:copy from search options and remap
+nova_compute_api->nova_compute_api:call _get_intances_by_filter()
+note over nova_compute_api:extend expected attrs
+
+# nova/objects/instance.py
+nova_compute_api->+objects:get_by_filters()
+alt sort_keys or sort_dirs
+    objects->+db_api:instance_get_all_by_filters_sort()
+else
+    objects->+db_api:instance_get_all_by_filters()
+end
+
+# database
+note over db_api:get session
+note over db_api:build query prefix
+db_api->+database:paginate query using sqlalchemy library
+
+# response 
+database->db_api:return instances model
+deactivate database
+note over db_api:fill metadata
+db_api->objects:return
+deactivate db_api
+deactivate db_api
+note over objects:make instance list
+objects->nova_compute_api:return
+deactivate objects
+nova_compute_api->nova_api:return
+deactivate nova_compute_api
+note over nova_api: cache instances
+nova_api->client:response
+deactivate nova_api
+deactivate client
