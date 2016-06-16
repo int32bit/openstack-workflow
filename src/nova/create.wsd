@@ -1,0 +1,171 @@
+# nova boot
+
+title Create Server Workflow
+
+### client 
+client->nova_api:server create request
+activate client
+activate nova_api
+
+### nova-api
+## nova/api/openstack/compute/servers.py
+note over nova_api:get nova context
+note over nova_api: get server dict
+note over nova_api: get or generate password
+note over nova_api:Query extensions
+note over nova_api:check policy:'create'
+note over nova_api:check policy:'create:force_host'
+
+# block device
+opt if block_device_mapping
+    note over nova_api:check policy 'create:attach_volume'
+end
+
+# image
+note over nova_api: get image uuid
+
+# reservation id
+opt if has return_reservation_id
+    note over nova_api:pop "return_reservation_id" and flag it
+end
+
+# network
+note over nova_api: get networks
+note over nova_api: check and build network request object
+note over nova_api: check policy:'create:attach_network'
+
+# flavor
+note over nova_api: get flavor id
+note over nova_api: get instance type
+note over nova_api: nova_compute_api
+
+## nova/compute/api.py
+# create()
+note over nova_api: check policies
+note over nova_api:check multiple instances and specify ip
+note over nova_api:check_multiple_instances_neutron_ports
+# _create_instance()
+note over nova_api: get or generate reservation id
+note over nova_api: get security groups
+note over nova_api: check auto disk config
+note over nova_api: check policy:"create:forced_host"
+note over nova_api: validate and build base options
+# bdm:block device mappings
+note over nova_api:check and transform bdm
+note over nova_api: check metadata properties quota
+note over nova_api: check inject file quota
+note over nova_api: check request image status,min_ram,min_disk
+note over nova_api: get requested instance group(hints)
+# _provision_instances()
+note over nova_api: check num instances quota
+note over nova_api: populate instance for create
+note over nova_api: generate instance uuid
+note over nova_api: vm_state=BUILDING\ntask_state=SCHEDULING
+note over nova_api: pupulate instance name and hostname
+
+# database
+nova_api->database:create db entry for new instance
+nova_api->database:create block device mapping
+
+note over nova_api:check server group quota
+note over nova_api:check limit
+note over nova_api: instance group add member
+note over nova_api:send BUIDING state update notification
+note over nova_api: quota commit
+
+# _create_instance()
+note over nova_api:build filter properties
+note over nova_api:update instance state to CREATE
+# nova/conductor/api.py
+note over nova_api: get compute task api
+note over nova_api: ComputeTaskApi
+# nova/conductor/rpcapi.py
+
+# cast 
+nova_api->nova_conductor:cast build_instance
+activate nova_conductor
+nova_api->client:response
+deactivate nova_api
+deactivate client
+
+### nova-conductor
+# nova/conductor/manager.py
+# build_instance()
+note over nova_conductor:build request_spec for the scheduler
+note over nova_conductor:setup instance group
+note over nova_conductor: check retry policy and populate retry
+# nova/scheduler/client/__init__.py
+# --
+# nova/scheduler/client/query.py
+# nova/scheduler/rpcapi.py
+note over nova_conductor: get scheduler rpc client
+
+### nova-scheduler
+nova_conductor->nova_scheduler:select_destinations
+activate nova_scheduler
+note over nova_scheduler: load scheduler driver
+note over nova_scheduler: get all host states
+note over nova_scheduler: get filtered hosts
+note over nova_scheduler: get weighed hosts
+note over nova_scheduler: chose hosts from weighed hosts
+
+### nova-conductor
+nova_scheduler->nova_conductor:return selected hosts
+deactivate nova_scheduler
+# nova/conductor/manager.py
+note over nova_conductor: connecte instances and hosts
+note over nova_conductor: iterate all the instances
+# nova/compute.rpcapi.py
+note over nova_conductor: prepare rpc client
+nova_conductor->nova_compute:build_and_run_instance
+activate nova_compute
+deactivate nova_conductor
+
+### nova-compute
+# nova/compute/manager.py
+nova_compute->database:vm_state=BUILDING\ntask_state=None
+note over nova_compute:decode injected file
+note over nova_compute: get available node
+note over nova_compute: notify about instance usage
+note over nova_compute: get resource tracker
+note over nova_compute:  resource tracker claim resource
+note over nova_compute: validata instance group policy
+
+# nova/compute/manager.py _build_network_for_instance
+note over nova_compute: build network info for instance
+note over nova_compute: get macs for instance(None)
+note over nova_compute: get dhcp options for instance(None)
+nova_compute->database: vm_state=BUILDING\ntask_state=NETWORKING
+note over nova_compute: update resource tracker
+
+## network
+note over nova_compute: get network api class
+# nova/network/__init__.py 
+# nova/network/neutronv2/api.py API()
+note over nova_compute: get neutron client
+nova_compute->neutron:get available network
+note over nova_compute: check external network attach
+
+nova_compute->neutron:list security groups
+note over nova_compute: validate security groups
+nova_compute->neutron:create port
+note over nova_compute: convert to network model
+
+## block device mapping
+note over nova_compute:verify or set default devices name
+note over nova_compute:ensure root device name \n and is set to first block devices
+nova_compute->database:vm_state=BUILDING\n task_state=BLOCK_DEVICE_MAPPING
+note over nova_compute:setup the block device for an instance
+
+nova_compute->database:vm_state=BUIDING\ntask_state=SPAWNING
+nova_compute->libvirt:spawn
+note over libvirt:get image meta
+note over libvirt:get disk info
+note over libvirt:create image(disk,swap,etc.)
+note over libvirt:generate libvirt guest xml
+note over libvirt:create domain and network
+note over libvirt: wait to boot
+libvirt->nova_compute:when the instance state is RUNNING
+nova_compute->deactivate:update instance after spawn
+deactivate nova_compute
+
