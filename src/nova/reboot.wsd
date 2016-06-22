@@ -88,7 +88,7 @@ end
 libvirt->nova_compute: done
 deactivate libvirt
 
-nova_compute->dabase:task_state=None\n set new power state
+nova_compute->database:task_state=None\n set new power state
 note over database: save instance
 database->nova_compute: done
 note over nova_compute: notify reboot end
