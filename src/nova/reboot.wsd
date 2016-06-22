@@ -1,0 +1,95 @@
+title reboot an instance
+participant client
+participant nova_api
+participant database
+participant glance
+participant neutron
+participant nova_compute
+participant libvirt
+
+# nova/api/compute/servers.py _stop_server()
+client->nova_api:reboot
+activate client
+activate nova_api
+note over nova_api: get reboot type
+note over nova_api: get context
+nova_api->database: get instance by uuid
+database->nova_api: return instance 
+note over nova_api: authorize reboot action
+
+# nova/compute/api.py reboot()
+note over nova_api: check policy
+note over nova_api: check instance lock
+note over nova_api: check instance state
+note over nova_api: check reboot type and vm state
+nova_api->database:task_states = REBOOTING or \n task_states = REBOOTING_HARD
+note over database: save instance
+database->nova_api: done
+note over nova_api: record reboot action
+
+# nova/compute/rpcapi.py reboot_instance()
+nova_api->nova_compute: reboot_instance
+deactivate nova_api
+deactivate client 
+activate nova_compute
+
+# nova/compute/manager.py reboot_instance()
+note over nova_compute: reverts task state
+nova_compute->database: get instance block device mapping
+note over database: get by instance uuid
+database->nova_compute: block device mapping
+nova_compute->libvirt: get block device info
+note over libvirt: get_block_device_info
+libvirt->nova_compute: block device info
+
+nova_compute->neutron: get instance network info
+neutron->nova_compute: instance network info
+note over nova_compute: notity reboot start
+nova_compute->libvirt: get power state
+note over libvirt: get info by instance
+note over libvirt: retrieve state from instance info
+libvirt->nova_compute: power state
+nova_compute->database:task_state=REBOOT_PENDING or\ntask_state=REBOOT_PENDING_HARD
+note over database: save instance
+database->nova_compute:done
+note over nova_compute: save current vm state
+nova_compute->database: task_state=REBOOT_STARTED or\ntask_state=REBOOT_STARTED_HARD
+note over database: save instance
+database->nova_compute: done
+nova_compute->libvirt: reboot
+activate libvirt
+alt soft reboot
+    note over libvirt: get instance guest
+    note over libvirt: retrieve domain from guest
+    note over libvirt: get power state
+    note over libvirt: call domain.shutdown
+    note over libvirt: prepare pci devices for use
+    note over libvirt: wait until power state is SHUTDOWN or CRASHED
+    note over libvirt: create domain
+    note over libvirt: wait for running
+else hard reboot or soft reboot fail
+    note over libvirt: get instance guest
+    note over libvirt: call guest.poweroff
+    note over libvirt: get image meta from instance
+    note over libvirt: get instance dir
+    note over libvirt: ensure instance dir tree
+    note over libvirt: get disk info
+    note over libvirt: get xml
+    note over libvirt: Re-populate any missing backing files
+    note over libvirt: get block device mapping info 
+    note over libvirt: re-establish any and all volume connections
+    note over libvirt: get neutron events
+    note over libvirt: plug in virtual interface
+    note over libvirt: prepare firewall rules
+    note over libvirt: create domain
+    note over libvirt: apply instance firewall filters
+    note over libvirt: wait for running
+end
+libvirt->nova_compute: done
+deactivate libvirt
+
+nova_compute->dabase:task_state=None\n set new power state
+note over database: save instance
+database->nova_compute: done
+note over nova_compute: notify reboot end
+deactivate nova_compute

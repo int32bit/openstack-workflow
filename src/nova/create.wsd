@@ -82,7 +82,7 @@ note over nova_api: ComputeTaskApi
 # nova/conductor/rpcapi.py
 
 # cast 
-nova_api->nova_conductor:cast build_instance
+nova_api->nova_conductor: build_instance
 activate nova_conductor
 nova_api->client:response
 deactivate nova_api
@@ -158,14 +158,20 @@ nova_compute->database:vm_state=BUILDING\n task_state=BLOCK_DEVICE_MAPPING
 note over nova_compute:setup the block device for an instance
 
 nova_compute->database:vm_state=BUIDING\ntask_state=SPAWNING
+
+## libvirt 
 nova_compute->libvirt:spawn
 note over libvirt:get image meta
 note over libvirt:get disk info
-note over libvirt:create image(disk,swap,etc.)
+
+note over libvirt: ensure directories exist and are writable
+note over libvirt: ensure console.log and disk.config
+note over libvirt: create image(disk,swap,etc.)
+note over libvirt: create config drive
 note over libvirt:generate libvirt guest xml
 note over libvirt:create domain and network
 note over libvirt: wait to boot
+## nova-compute 
 libvirt->nova_compute:when the instance state is RUNNING
-nova_compute->deactivate:update instance after spawn
+nova_compute->database:update instance after spawn
 deactivate nova_compute
-

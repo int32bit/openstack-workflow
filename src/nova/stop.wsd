@@ -1,0 +1,55 @@
+title stop an instance
+participant client
+participant nova_api
+participant database
+participant glance
+participant neutron
+participant nova_compute
+participant libvirt
+
+# nova/api/compute/servers.py _stop_server()
+client->nova_api:os-stop
+activate client
+activate nova_api
+note over nova_api: get context
+nova_api->database: get instance by uuid
+database->nova_api: return instance 
+note over nova_api: authorize stop action
+
+# nova/compute/api.py stop()
+note over nova_api: check instance lock
+note over nova_api: check instance host
+note over nova_api: check instance cell
+note over nova_api: check instance state
+note over nova_api: call force_stop()
+nova_api->database: task_states = POWERING_OFF
+database->nova_api: done
+note over nova_api: record action
+
+# nova/compute/rpcapi.py start_instance()
+nova_api->nova_compute: stop_instance
+deactivate nova_api
+deactivate client 
+activate nova_compute
+
+# nova/compute/manager.py stop_instance()
+note over nova_compute: check current power state
+note over nova_compute: notify power off start
+note over nova_compute: get timeout & retry_interval value
+nova_compute->libvirt: power_off
+activate libvirt
+
+note over libvirt: get instance guest
+note over libvirt: get power state
+note over libvirt: domain.shutdown
+note over libvirt: retry until power state is shutdown
+alt timeout
+    note over libvirt: get instance guest
+    note over libvirt: guest power off
+end
+libvirt->nova_compute: done
+deactivate libvirt
+
+nova_compute->database:vm.state=STOPPED\ntask_state=None
+database->nova_compute: done
+note over nova_compute: notify power off end

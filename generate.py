@@ -26,7 +26,7 @@ def getSequenceDiagram(wsdfile, outputFile, style = 'default'):
         f.close()
     except IOError as e:
         print(e)
-        return false
+        return False
     expr = re.compile("(\?(img|pdf|png|svg)=[a-zA-Z0-9]+)")
     m = expr.search(line)
 

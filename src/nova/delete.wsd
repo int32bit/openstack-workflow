@@ -1,0 +1,101 @@
+title server delete workflow
+
+participant client
+participant nova_api
+participant glance
+participant database
+participant nova_compute
+participant cinder
+participant libvirt
+
+# nova-api
+# nova/api/openstack/compute/servers.py
+client->nova_api: delete request
+activate client
+activate nova_api
+note over nova_api: check policy:"delete"
+nova_api->nova_api: get server by uuid
+# nova/compute/api.py
+note over nova_api: check policy:"delete"
+note over nova_api: check instance lock
+note over nova_api: check instance cell
+note over nova_api: check instance state
+alt terminate disable
+    nova_api->client:Failed to delete
+end
+nova_api->database:get block device mappings
+alt instance has snapshot associate and in SHELVED state
+    note over nova_api: get snapshot id
+    note over nova_api: get glance client
+    nova_api->glance:delete snapshot
+end
+nova_api->database:vm_state->DELETING
+nova_api->database:get quota from db
+note over nova_api:create reservation
+alt cell_type == 'api'
+    note over nova_api:call the callback
+    note over nova_api: commit quota
+    nova_api->client:return
+end
+
+alt not instance.host and not shelved_offloaded
+    nova_api->database:destroy instance
+    note over nova_api:quota commit
+    nova_api->client:response
+end
+
+alt instance resize hasn't been confirmed
+    nova_api->nova_compute:call confirm resize
+end
+alt service is down then execute local delete
+    note over nova_api:clean instance info cache
+    note over nova_api: detach volume
+    nova_api->database:delete instance from db
+    nova_api->database:clean  dbms info and network info
+    note over nova_api: quota commit
+    nova_api->client:response
+end
+alt Instance is already in deleting or soft_deleting
+    nova_api->client:Instance is already in deleting state,ignore
+end
+nova_api->nova_compute:terminate_instance
+deactivate nova_api
+deactivate client
+activate nova_compute
+
+note over nova_compute:Remove all pending events
+note over nova_compute: notify delete start
+note over nova_compute: notify shutdown start
+note over nova_compute: get network info for instance
+nova_compute->libvirt:get block device info
+
+nova_compute->libvirt:destry
+activate libvirt
+# nova/virt/libvirt/driver.py
+note over libvirt: get guest(libvirt client)
+note over libvirt: power off
+note over libvirt: unplug vifs
+note over libvirt: wait for power state is shutdown
+note over libvirt: disconnect from volumes
+note over libvirt: remove disks
+note over libvirt: release serial console/port
+note over libvirt: undefine domain
+libvirt->nova_compute:done
+deactivate libvirt
+
+# nova/compute/manager.py
+nova_compute->neutron:deallocate_network
+nova_compute->libvirt: get volume connector
+nova_compute->cinder:terminate connection
+nova_compute->cinder:detach volume
+note over nova_compute: notify shutdown end
+note over nova_compute: delete cache info
+note over nova_compute:clean up volumes that \n delete on termination
+nova_compute->database:vm_states.DELETED\npower_state.NOSTATE
+note over nova_compute:update resource tracker
+
+nova_compute->database:destroy instance
+note over nova_compute: quota commit
+nova_compute->database:destroy bdm
+note over nova_compute: notify about delete.end
+note over nova_compute: send the uuid to the scheduler

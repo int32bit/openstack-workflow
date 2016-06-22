@@ -1,0 +1,79 @@
+title start an instance
+
+participant client
+participant nova_api
+participant database
+participant glance
+participant neutron
+participant nova_compute
+participant libvirt
+
+# nova/api/compute/servers.py _start_server()
+client->nova_api:os-start
+activate client
+activate nova_api
+note over nova_api: get context
+nova_api->database: get instance by uuid
+database->nova_api: return instance 
+note over nova_api: authorize start action
+
+# nova/compute/api.py start()
+note over nova_api: check instance lock
+note over nova_api: check instance host
+note over nova_api: check instance cell
+note over nova_api: check instance state
+nova_api->database: task_states = POWERING_ON
+database->nova_api: done
+note over nova_api: record action
+
+# nova/compute/rpcapi.py start_instance()
+nova_api->nova_compute: start_instance
+deactivate nova_api
+deactivate client 
+activate nova_compute
+
+# nova/compute/manager.py start_instance()
+note over nova_compute: notify power on start
+nova_compute->neutron: get instance network info
+nova_compute->database: get block device mapping list
+database->nova_compute: return bdm list
+nova_compute->libvirt: get block device info
+libvirt->nova_compute: transform to the \n driver block_device format
+nova_compute->libvirt: power on
+activate libvirt
+
+# nova/virt/libvirt/driver power_on
+note over libvirt: power off instance
+note over libvirt: ensure power state is SHUTDOWN
+note over libvirt: convert system metadata to image metadata
+note over libvirt: get instance dir
+note over libvirt: ensure instance dir exists
+note over libvirt: get disk info
+note over libvirt: regenerate guest xml
+note over libvirt: write xml to disk
+alt auth token
+    note over libvirt: get instance backing disk info
+    note over libvirt: create images and backing
+end
+note over libvirt: re-establish any and all volume connections
+note over libvirt: get neutron events(None here)
+note over libvirt: plug vifs
+note over libvirt: set up firwall filter
+note over libvirt: create domain
+note over libvirt: start/launch domain
+note over libvirt: apply instance filter
+alt instance is paused:
+    note over libvirt: resume instance
+end
+note over libvirt: prepare pci devices for use
+note over libvirt: wait for reboot
+libvirt->nova_compute: when power state is RUNNING
+deactivate libvirt
+# nova/compute/manager.py 
+note over nova_compute: get shelved image id
+nova_compute->glance: delete shelved image
+glance->nova_compute: done
+note over nova_compute: remove shelved keys \n from system metadata
+nova_compute->database:vm.state=ACTIVE\ntask_state=None
+database->nova_compute: done
+note over nova_compute: notify power on end
