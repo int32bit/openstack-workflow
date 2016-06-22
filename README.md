@@ -30,7 +30,7 @@ All diagrams generated will be put in `./output`, use your image viewer to show 
 ### 2. Reboot Server
 
  
-![create server workflow](output/nova/create.png)
+![create server workflow](output/nova/reboot.png)
 
 
 ## How to add new diagrams
