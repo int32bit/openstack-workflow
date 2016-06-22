@@ -24,7 +24,7 @@ note over nova_api: check instance state
 note over nova_api: call force_stop()
 nova_api->database: task_states = POWERING_OFF
 database->nova_api: done
-note over nova_api: record action
+note over nova_api: record stop action
 
 # nova/compute/rpcapi.py start_instance()
 nova_api->nova_compute: stop_instance
@@ -39,14 +39,16 @@ note over nova_compute: get timeout & retry_interval value
 nova_compute->libvirt: power_off
 activate libvirt
 
-note over libvirt: get instance guest
-note over libvirt: get power state
-note over libvirt: domain.shutdown
-note over libvirt: retry until power state is shutdown
-alt timeout
+alt try graceful shutdown
+    note over libvirt: get instance guest
+    note over libvirt: get power state
+    note over libvirt: graceful shutdown
+    note over libvirt: retry until power state is shutdown or timeout
+else timeout, then destroy(force power off)
     note over libvirt: get instance guest
     note over libvirt: guest power off
 end
+
 libvirt->nova_compute: done
 deactivate libvirt
 
