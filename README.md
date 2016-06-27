@@ -39,6 +39,10 @@ make clean
 
 ![stop server](output/nova/stop.png)
 
+### 4. Rebuild Server
+
+![rebuild server](output/nova/rebuild.png)
+
 
 ## Need more diagrams ?
 

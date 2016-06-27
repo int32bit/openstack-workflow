@@ -1,0 +1,245 @@
+title rebuild an instance
+participant client
+participant nova_api
+participant database
+participant glance
+participant neutron
+participant nova_conductor
+participant nova_scheduler
+participant nova_compute
+participant libvirt
+
+# nova/api/compute/servers.py _stop_server()
+client->nova_api: rebuild
+activate client
+activate nova_api
+
+# nova/api/openstack/compute/servers.py _action_rebuild()
+note over nova_api: validation rebuild schema
+note over nova_api: get image ref
+note over nova_api: get or generate admin password
+note over nova_api: get context
+note over nova_api: authrize action rebuild policy
+nova_api->nova_api: get server by uuid
+note over nova_api: cache db instance
+note over nova_api: build rebuild_kwargs
+
+# nova/compute/api.py rebuild()
+note over nova_api: check policy
+note over nova_api: check instance lock
+note over nova_api: check instance cell
+note over nova_api: ensure instance state in \n [ACTIVE,STOPPED,ERROR]
+nova_api->glance: get image by id
+activate glance
+note over glance: get image by id
+glance->nova_api: image object
+deactivate glance
+note over nova_api: check auto disk config
+nova_api->database: get block device mapping list
+activate database
+note over database: get by instance uuid
+database->nova_api: bdms
+deactivate database
+note over nova_api: get root bdm from bdms
+note over nova_api: check metadata quota
+note over nova_api: check injected files quota
+note over nova_api: check requested image
+note over nova_api: handle kernel & ramdisk
+nova_api->database: update instance
+activate database
+note over database: update image properties
+note over database: task_states.REBUILDING
+database->nova_api: done
+deactivate database
+note over nova_api: reset image metadata
+nova_api->database: get block device mapping list
+activate database
+note over database: get by instance uuid
+database->nova_api: bdms
+deactivate database
+note over nova_api: record rebuild action
+
+# nova/conductor/api.py ComputeTaskAPI.rebuild_instance()
+# nova/conductor/rpcapi.py 
+
+nova_api->nova_conductor: rebuild instance
+deactivate nova_api
+deactivate client
+
+activate nova_conductor
+note over nova_conductor: build request spec
+note over nova_conductor: setup instance group
+nova_conductor->nova_scheduler: select_destinations
+activate nova_scheduler
+note over nova_scheduler: notify scheduler.select_destinations.start
+note over nova_scheduler: get all hosts state 
+note over nova_scheduler: get filtered hosts
+note over nova_scheduler: get weighed hosts from filtered hosts
+note over nova_scheduler: choose hosts from ordered weighed hosts
+note over nova_scheduler: notify scheduler.select_destinations.end
+nova_scheduler->nova_conductor: selected hosts
+deactivate nova_scheduler
+nova_conductor->database: get migrations
+activate database
+note over database: get by instance and status
+database->nova_conductor: migrations
+deactivate database
+note over nova_conductor: notify rebuild.scheduled
+
+# nova/compute/rpcapi.py rebuild_instance
+nova_conductor->nova_compute:rebuild_instance
+deactivate nova_conductor
+activate nova_compute
+
+# nova/compute/manager.py rebuild_instance()
+
+nova_compute->glance: get image by uuid
+activate glance
+note over glance: get image
+glance->nova_compute: image instance
+deactivate glance
+nova_compute->database:get compute node info
+activate database
+note over database: get_first_node_by_host_for_old_compat
+database->nova_compute: compute node info
+deactivate database
+
+note over nova_compute: build rebuild claim
+
+
+alt recreate with the same disk
+    note over nova_compute: check the driver if support recreate
+    note over nova_compute: Ensure an instance with the same name is not already present
+    note over nova_compute: decide if the instance is on shared storage
+    
+    # if on_shared_storage,disk on shared storage, recreating using existing disk
+    # else disk not on shared storage, rebuilding it.
+    nova_compute->glance: get image by uuid
+    activate glance
+    glance->nova_compute: image instance metadata
+    deactivate glance
+    note over nova_compute: store origin image ref url
+    note over nova_compute: notify usage exists
+    note over nova_compute: notify rebuild.start
+    nova_compute->database:task_stats=REBUIDING
+    database->nova_compute: done
+    nova_compute->+neutron: setup networks on host(only nova-network)
+    neutron->nova_compute: done
+    deactivate neutron
+    nova_compute->+neutron: get network info for instance
+    neutron->nova_compute: instance's network info
+    deactivate neutron
+    
+    alt bdms is None
+        nova_compute->+database: get block device mapping list
+        database->nova_compute: bdms
+        deactivate database
+    end
+    
+    note over nova_compute: decode injected files
+    note over nova_compute: libvirt driver not implement rebuild so call rebuild_default_impl
+    alt preserve_ephemeral
+        note over nova_compute: raise PreserveEphemeralNotSupported
+    end
+    note over nova_compute: detach block devices
+    
+else purge all existing data
+    nova_compute->+glance: get image by uuid
+    glance->nova_compute: image metadata
+    deactivate glance
+    note over nova_compute: store origin image ref url
+    note over nova_compute: notify usage exists
+    note over nova_compute: notify rebuild.start
+    nova_compute->database:task_stats=REBUIDING
+    database->nova_compute: done
+    nova_compute->+neutron: get network info for instance
+    neutron->nova_compute: instance's network info
+    deactivate neutron
+        alt bdms is None
+        nova_compute->+database: get block device mapping list
+        database->nova_compute: bdms
+        deactivate database
+    end
+    
+    note over nova_compute: decode injected files
+    note over nova_compute: libvirt driver not implement rebuild so call rebuild_default_impl
+    alt preserve_ephemeral
+        note over nova_compute: raise PreserveEphemeralNotSupported
+    end
+    nova_compute->libvirt: power off instance
+    activate libvirt
+    
+     alt graceful shutdown
+        note over libvirt: get instance guest
+        note over libvirt: graceful shutdown
+    else timeout
+        note over libvirt: get instance guest
+        note over libvirt: guest power off
+    end 
+    libvirt->nova_compute: done
+    deactivate libvirt
+    note over nova_compute: detach block devices
+    nova_compute->libvirt: destroy
+    activate libvirt
+    note over libvirt: get instance guest
+    note over libvirt: guest power off
+    note over libvirt: unplug virtual interface
+    note over libvirt: unfilter instance
+    note over libvirt: disconnect volumes
+    note over libvirt: destroy disks
+    note over libvirt: delete instance files
+    note over libvirt: release serial port
+    note over libvirt: undefine domain
+    libvirt->nova_compute: done
+    deactivate libvirt
+end
+    
+nova_compute->+database:task_state=REBUILD_BLOCK_DEVICE_MAPPING
+database->nova_compute: done
+deactivate database
+    
+note over nova_compute: re-attach block device
+note over nova_compute: get new block device info
+    
+nova_compute->+database:task_state=REBUILD_SPAWNING
+database->nova_compute: done
+deactivate database
+
+nova_compute->libvirt: spawn
+activate libvirt
+note over libvirt: create image
+note over libvirt: get guest xml
+note over libvirt: get connection info and attach volumes
+note over libvirt: plug virtual interfaces
+note over libvirt: setup basic filter
+note over libvirt: prepare instance filter
+note over libvirt: create domain
+note over libvirt: apply instance filter
+note over libvirt: waiting for boot
+libvirt->nova_compute: instance is active
+deactivate libvirt
+
+nova_compute->+database:vm_state=ACTIVE, task_state=None
+database->nova_compute: done
+deactivate database
+note over nova_compute: update config driver
+
+alt instance's original state is stopped
+    nova_compute->+database: vm_state=ACTIVE, task_state=POWERING_OFF
+    database->nova_compute:done
+    deactivate database
+    note over nova_compute: notify poweroff.start
+    nova_compute->+libvirt: power off instance
+    libvirt->nova_compute: done
+    deactivate libvirt
+    
+    nova_compute->+database: vm_state=STOPPED, task_state=None
+    database->nova_compute:done
+    deactivate database
+    note over nova_compute: notify poweroff.end
+end
+
+note over nova_compute: update scheduler instance info
+note over nova_compute: nofity rebuild.end
+
+deactivate nova_compute
