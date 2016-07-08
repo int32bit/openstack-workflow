@@ -1,0 +1,39 @@
+title suspend a server
+
+participant client
+participant nova_api
+
+client->nova_api: evacuate
+activate client
+activate nova_api
+
+# nova/api/openstack/compute/suspend_server.py _suspend()
+note over nova_api: authrize context
+nova_api->database: get instance by uuid
+database->nova_api: done
+
+# nova/compute/api.py suspend()
+note over nova_api: check policy
+note over nova_api: check instance lock
+note over nova_api: check instance cell
+note over nova_api: ensure instance state is ACTIVE
+
+nova_api->database: task_state = SUSPENDING
+database->nova_api: done
+note over nova_api: record action 'suspend'
+
+nova_api->+nova_compute: suspend_instance
+deactivate nova_api
+deactivate client
+
+note over nova_compute: notify: suspend.start
+nova_compute->+libvirt: suspend
+note over libvirt: get instance guest
+note over libvirt: detach pci devices
+note over libvirt: detach sriov ports
+note over libvirt: guest.save_memory_state()
+libvirt->nova_compute: done
+deactivate libvirt
+nova_compute->database:vm_state=SUSPENDED\n task_state=None
+note over nova_compute: notify: suspend.end
+deactivate nova_compute

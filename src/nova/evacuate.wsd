@@ -1,0 +1,123 @@
+title evacuate a server from a failed host
+
+participant client
+participant nova_api
+
+
+client->nova_api: evacuate
+activate client
+activate nova_api
+
+# nova/api/openstack/compute/evacuate.py _evacuate()
+note over nova_api: authrize context
+opt if changePassword and on shared storage
+    note over nova_api: admin password can't be\n changed on existing disk
+    nova_api->client: HTTPBadRequest
+end
+
+nova_api->database: get instance by uuid
+database->nova_api: done
+
+opt if target host == instance's host
+    note over nova_api: The target host can't be the same one
+    nova_api->client: HTTPBadRequest
+end
+
+# nova/compute/api.py evacuate()
+note over nova_api: ensure instance state in [ACTIVE,STOPPED,ERROR]
+nova_api->database: get service by compute host
+database->nova_api: done
+
+opt service is up
+    note over nova_api: compute service state is up
+    nova_api->client: ComputeServiceInUse
+end
+nova_api->database: task_state = REBUILDING
+database->nova_api: done
+note over nova_api: record action 'evacuate'
+nova_api->database: create a migration record
+database->nova_api: done
+note over nova_api: nofity: evacuate
+
+#return self.compute_task_api.rebuild_instance(context,
+#                        instance=instance,
+#                        new_pass=admin_password,
+#                        injected_files=None,
+#                        image_ref=None,
+#                        orig_image_ref=None,
+#                        orig_sys_metadata=None,
+#                        bdms=None,
+#                        recreate=True,
+#                        on_shared_storage=on_shared_storage,
+#                        host=host)
+# nova/conductor/api.py rebuild_instance()
+# nova/conductor/rpcapi.py rebuild_instance()
+nova_api->+nova_conductor: rebuild_instance
+deactivate nova_api
+deactivate client
+
+# nova/conductor/manager.py
+opt if not host
+    note over nova_conductor: build scheduler spect
+    note over nova_conductor: setup instance group
+    nova_conductor->+nova_scheduler: select destinations
+    # nova/scheduler/manager.py
+    note over nova_scheduler: notify scheduler.select_destinations.start
+    note over nova_scheduler: get all hosts state 
+    note over nova_scheduler: get filtered hosts
+    note over nova_scheduler: get weighed hosts from filtered hosts
+    note over nova_scheduler: choose hosts from ordered weighed hosts
+    note over nova_scheduler: notify scheduler.select_destinations.end
+    nova_scheduler->nova_conductor: selected hosts
+    deactivate nova_scheduler
+end
+nova_conductor->+database: get migration record
+note over database: get_by_instance_and_status
+database->nova_conductor: done
+deactivate database
+
+note over nova_conductor: notify: rebuild.scheduled
+nova_conductor->nova_compute: rebuild_instance
+deactivate nova_conductor
+activate nova_compute
+
+note over nova_compute: check driver suppert recreate
+note over nova_compute: ensure instance not exists
+
+alt on shared storage
+    note over nova_compute: log: recreating using existing disk
+else not on shared storage
+    note over nova_compute: log: rebuild from image ref
+end
+
+note over nova_compute: get image meta
+note over nova_compute: get image ref url
+note over nova_compute: nofity: rebuild start
+nova_compute->database: task_state=REBUILDING
+database->nova_compute: done
+note over nova_compute: setup instance network on host
+note over nova_compute: get instance network info
+nova_compute->database: get block device mapping list
+database->nova_compute: done
+nova_compute->libvirt: get block device info
+note over nova_compute: Transform block devices to \nthe driver block_device format
+note over nova_compute: detach volumes
+nova_compute->database: task_state=REBUILD_BLOCK_DEVICE_MAPPING
+database->nova_compute: done
+note over nova_compute: re-attach block devices
+nova_compute->+libvirt: spawn
+note over libvirt: create image
+note over libvirt: get guest xml 
+note over libvirt: create domain and network
+note over libvirt: wait for boot
+libvirt->nova_compute: done
+deactivate libvirt
+
+opt original state is STOPPED
+    nova_compute->database: vm_state = ACTIVE\ntask_state = task_states.POWERING_OFF
+    database->nova_compute: done
+    nova_compute->libvirt: power off instance
+    libvirt->nova_compute: done
+end
+note over nova_compute: update scheduler instance info
+note over nova_compute: notify: rebuild.end

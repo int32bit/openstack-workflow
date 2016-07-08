@@ -1,0 +1,44 @@
+title unpause a server
+participant client
+participant nova_api
+
+
+client->nova_api: unpause
+activate client
+activate nova_api
+
+# nova/api/openstack/compute/pause_server.py _unpause()
+note over nova_api: authrize context
+nova_api->database: get instance by uuid
+database->nova_api: done
+
+# nova/compute/api.py unpause()
+note over nova_api: check policy
+note over nova_api: check instance lock
+note over nova_api: check instance cell
+note over nova_api: ensure instance state is PAUSED
+nova_api->database: task_state = UNPAUSING
+database->nova_api: done
+
+note over nova_api: record action: unpause
+# nova/compute/rpcapi.py unpause_instance()
+nova_api->nova_compute: unpause_instance
+deactivate nova_api
+deactivate client
+activate nova_compute
+
+# nova/compute/manager.py unpause_instance()
+note over nova_compute: notify: unpause.start
+nova_compute->libvirt: unpause
+activate libvirt
+
+# nova/virt/libvirt/driver.py unpause()
+note over libvirt: get domain
+note over libvirt: domain.resume()
+libvirt->nova_compute: done
+deactivate libvirt
+# nova/compute/manager.py unpause_instance()
+nova_compute->database: vm_state = vm_states.ACTIVE\ntask_state = None
+database->nova_compute: done
+note over nova_compute: notify: unpause.end
+deactivate nova_compute
