@@ -1,6 +1,6 @@
 # Openstack Sequence Diagrams
 
-Draw Openstack operation sequence diagrams using [Websequence Diagrams Tool](https://www.websequencediagrams.com/). An easiest way to track the workflow of Openstack. It may be useful for user to learn Openstack or problem troubleshooting. 
+Draw Openstack operation sequence diagrams using [Websequence Diagrams Tool](https://www.websequencediagrams.com/). An easiest way to track the workflow of Openstack and can be useful for user to learn Openstack or administer to problem troubleshooting. 
 
 ## Action List
 
@@ -38,6 +38,15 @@ Draw Openstack operation sequence diagrams using [Websequence Diagrams Tool](htt
 - [ ] Volume Detach
 - [ ] Interface Attach
 - [ ] Interface Detach
+
+
+### 2. Todo
+
+- [ ] Cinder
+- [ ] Neutron
+- [ ] Sahara
+- [ ] Magnum
+- [ ] ...
 
 ## Quick Start
 
