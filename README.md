@@ -6,23 +6,22 @@ Draw Openstack operation sequence diagrams using [Websequence Diagrams Tool](htt
 
 ### 1. Virtual Machine Manager
 
-- [x] Boot
-- [x] Start
-- [x] Stop
-- [x] Reboot
-- [x] Rebuild
-- [x] Resize
-- [x] List
-- [x] Delete
-- [x] Reset State
-- [x] Create Image(Snapshot)
-- [x] Change Admin Password
-- [x] Evacuate
-- [x] Pause
-- [x] Unpause
-- [x] Suspend
-- [x] UnSuspend
-- [x] Reset Network
+- [x] [Boot](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/create.png)
+- [x] [Start](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/start.png)
+- [x] [Stop](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/stop.png)
+- [x] [Reboot](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/reboot.png)
+- [x] [Rebuild](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/rebuild.png)
+- [x] [Resize](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/resize.png)
+- [x] [List](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/list.png)
+- [x] [Delete](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/delete.png)
+- [x] [Reset State](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/reset_state.png)
+- [x] [Create Image](Snapshot)(https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/snapshot.png)
+- [x] [Change Admin Password](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/changePassword.png)
+- [x] [Evacuate](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/evacuate.png)
+- [x] [Pause](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/pause.png)
+- [x] [Unpause](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/unpause.png)
+- [x] [Suspend](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/suspend.png)
+- [x] [Reset Network](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/reset_network.png)
 - [ ] Cold Migrate
 - [ ] Live Miagrate
 - [ ] Shelve
