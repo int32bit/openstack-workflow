@@ -2,7 +2,44 @@
 
 Draw Openstack operation sequence diagrams using [Websequence Diagrams Tool](https://www.websequencediagrams.com/). An easiest way to track the workflow of Openstack. It may be useful for user to learn Openstack or problem troubleshooting. 
 
-## Quick start
+## Action List
+
+### 1. Virtual Machine Manager
+
+- [x] Boot
+- [x] Start
+- [x] Stop
+- [x] Reboot
+- [x] Rebuild
+- [x] Resize
+- [x] List
+- [x] Delete
+- [x] Reset State
+- [x] Create Image(Snapshot)
+- [x] Change Admin Password
+- [x] Evacuate
+- [x] Pause
+- [x] Unpause
+- [x] Suspend
+- [x] UnSuspend
+- [x] Reset Network
+- [ ] Cold Migrate
+- [ ] Live Miagrate
+- [ ] Shelve
+- [ ] Shelve-offload
+- [ ] Lock
+- [ ] Unlock
+- [ ] Backup
+- [ ] Meta
+- [ ] Refresh Network
+- [ ] Rename
+- [ ] Rescue
+- [ ] volume Attach
+- [ ] Volume Detach
+- [ ] Interface Attach
+- [ ] Interface Detach
+
+## Quick Start
 
 
 ### 1. Generate diagrams
