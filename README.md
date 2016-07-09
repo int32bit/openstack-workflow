@@ -15,7 +15,7 @@ Draw Openstack operation sequence diagrams using [Websequence Diagrams Tool](htt
 - [x] [List](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/list.png)
 - [x] [Delete](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/delete.png)
 - [x] [Reset State](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/reset_state.png)
-- [x] [Create Image](Snapshot)(https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/snapshot.png)
+- [x] [Create Image(Snapshot)](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/snapshot.png)
 - [x] [Change Admin Password](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/changePassword.png)
 - [x] [Evacuate](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/evacuate.png)
 - [x] [Pause](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/pause.png)
