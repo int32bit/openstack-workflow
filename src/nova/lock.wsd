@@ -1,4 +1,4 @@
-title lock an instance
+title lock an instance(admin)
 
 participant client
 participant nova_api
