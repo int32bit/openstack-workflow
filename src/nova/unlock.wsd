@@ -9,23 +9,23 @@ activate nova_api
 activate client
 note over nova_api:get context
 note over nova_api:authorize action 'unlock' policy
-note over nova_api:fetch instance,handling error checking
+
+nova_api->database: get instance by id
+activate database
+database->nova_api: done
+deactivate database
 
 #nova/compute/api.py unlock()
 note over nova_api:check policy
-note over nova_api:call unlock()
 nova_api->database:query instance.locked
 activate database
 database->nova_api:done
 deactivate database
-alt if skip_policy_check and is_expected_locked_by are false
-note over nova_api:check policy
-else if skip_policy_check and is_expected_locked_by are true
-nova_api->nova_api:update context
+
+nova_api->database:instance.locked = False\nlocked_by=None
 activate database
-nova_api->database:update locked = False
-nova_api->database:update locked_by = None
-note over database:save()
-end
+database->nova_api: done
+deactivate database
+nova_api->client: response
 deactivate nova_api
 deactivate client
