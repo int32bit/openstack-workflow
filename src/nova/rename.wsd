@@ -14,7 +14,7 @@ note over nova_api:get update_dict['display_name']
 nova_api->database:get server by id
 activate database
 database->nova_api:done
-deactivate
+deactivate database
 nova_api->database:update(update_dict)
 activate database
 note over database:save
