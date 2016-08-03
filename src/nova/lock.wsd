@@ -9,23 +9,17 @@ activate nova_api
 activate client
 note over nova_api:get context
 note over nova_api:authorize action 'lock' policy
-note over nova_api:fetch instance,handling error checking
+nova_api->database: get instance by id
+database->nova_api: done
+
+# note over nova_api:fetch instance,handling error checking
 
 #nova/compute/api.py lock()
 note over nova_api:check policy
-note over nova_api:call lock()
-nova_api->database:query instance.locked
-activate database
-database->nova_api:done
-deactivate database
-alt if instance is locked
-nova_api->client:response
-else if instance is not locked
-nova_api->nova_api:update context
-activate database
-nova_api->database:update locked = true
-nova_api->database:update owner
-note over database:save()
-end
+#note over nova_api:call lock()
+nova_api->database:instance.locked = True\nlocked_by=owner or admin
+database->nova_api: done
+
+nova_api->client: response
 deactivate nova_api
 deactivate client
