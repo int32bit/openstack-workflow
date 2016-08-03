@@ -1,0 +1,118 @@
+title cold migrate a server to a new host
+
+participant client
+participant nova_api
+
+client->nova_api: migrate
+activate client
+activate nova_api
+
+# nova/api/openstack/compute/migrate_server.py
+note over nova_api: get context
+note over nova_api: authrize context migrate
+nova_api->database: get instance by uuid
+# nova/compute/api.py resize()
+note over nova_api: check policy
+note over nova_api: check instance lock
+note over nova_api: check instance state in [ACTIVE, STOPPED]
+note over nova_api: check audo_disk_config
+nova_api->database: task_state = RESIZE_PREP\n progress=0
+database->nova_api: done
+note over nova_api: record action start:migrate
+# nova/conductor/api.py resize_instance()
+nova_api->nova_conductor: migrate_server()
+activate nova_conductor
+note over nova_conductor: event report: cold migrate
+note over nova_conductor: build request spec
+note over nova_conductor: setup instance group
+note over nova_conductor: polulate retry
+nova_conductor->+nova_scheduler: select destinations
+# nova/scheduler/manager.py
+note over nova_scheduler: notify scheduler.select_destinations.start
+note over nova_scheduler: get all hosts state 
+note over nova_scheduler: get filtered hosts
+note over nova_scheduler: get weighed hosts from filtered hosts
+note over nova_scheduler: choose hosts from ordered weighed hosts
+note over nova_scheduler: notify scheduler.select_destinations.end
+nova_scheduler->nova_conductor: selected hosts
+deactivate nova_scheduler
+note over nova_conductor: populate filter properties
+nova_conductor->+nova_compute_dest: prep_resize()
+deactivate nova_conductor
+deactivate nova_api
+deactivate client
+
+note over nova_compute_dest: notify about instance usage: resize.prep.start
+nova_compute_dest->database: instance_type='new'\nmetadata['old_vm_state']=vm_state
+database->nova_compute_dest: done
+note over nova_compute_dest: get resource tracker & resize claim
+nova_compute_dest->+nova_compute_src: resize_instance()
+deactivate nova_compute_dest
+
+nova_compute_src->neutron: get network info
+neutron->nova_compute_src: done
+nova_compute_src->database: migration.status='migrating'
+database->nova_compute_src:done
+nova_compute_src->database: task_state=RESIZE_MIGRATING
+database->nova_compute_src: done
+note over nova_compute_src: notify about instance usage: resize.start
+nova_compute_src->database: get block device mapping list by instance id
+database->nova_compute_src: done
+note over nova_compute_src: Transform block devices to the driver block_device format
+nova_compute_src->+libvirt: migrate_disk_and_power_off
+note over libvirt: get ephemrals disk
+note over libvirt: get instance disk info
+alt image_type=='lvm' and not boot from volume
+    note over libvirt: Migration is not implemented for LVM backed instances
+end
+note over libvirt: get instance base path
+alt not shared storage:
+    note over libvirt: create instance base path to dest host
+end
+note over libvirt: power off
+note over libvirt: get block device mapping info
+note over libvirt: disconnect volume
+note over libvirt: rename instance base path with suffix of '_resize'
+alt shared storage:
+    note over libvirt: mkdir -p inst_base
+end
+note over libvirt: copy images to dest host
+libvirt->nova_compute_src: return disk info
+deactivate libvirt
+
+nova_compute_src->cinder: terminate volume connections
+cinder->nova_compute_src: done
+# ->neutron: migrate instance start
+nova_compute_src->database: migration.status = 'post-migrating'
+database->nova_compute_src: done
+nova_compute_src->database: instance.host=migration.dest_compute\ninstance.node = migration.dest_node\ninstance.task_state = task_states.RESIZE_MIGRATED
+database->nova_compute_src: done
+note over nova_compute_src: nofity about instance usage: resize.end
+note over nova_compute_src: clear event for instance
+deactivate nova_compute_src
+nova_compute_src->+nova_compute_dest: finish_resize
+note over nova_compute_dest: apply migration context
+nova_compute_dest->neutron: setup network on host
+neutron->nova_compute_dest: done
+nova_compute_dest->neutron: get instance network info
+neutron->nova_compute_dest: done
+nova_compute_dest->database: task_state=RESIZE_FINISH
+database->nova_compute_dest: done
+note over nova_compute_dest: notify about instance usage: finish_resize.start
+note over nova_compute_dest: Transform block devices to the driver block_device format
+nova_compute_dest->libvirt: finish_migration()
+activate libvirt
+note over libvirt: get disk info
+note over libvirt: create image
+note over libvirt: create domain and network
+alt old vmstate is power on
+    note over libvirt: wait for running
+end
+libvirt->nova_compute_dest: done
+deactivate libvirt
+nova_compute_dest->database: migration.status = 'finished'
+database->nova_compute_dest: done
+nova_compute_dest->database: vm_state=RESIZED\ntask_state=None\nlaunched_at=now()
+database->nova_compute_dest: done
+note over nova_compute_dest: update scheduler instance info
+note over nova_compute_dest: notify about instance usage: finished_resize.end
