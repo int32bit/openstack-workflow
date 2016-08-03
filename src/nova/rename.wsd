@@ -1,0 +1,25 @@
+title update server's name
+participant client
+participant nova_api
+participant database
+
+#nova/api/openstack/compute/servers.py update()
+client->nova_api:update name
+activate client
+activate nova_api
+note over nova_api:validate update schema
+note over nova_api:get context
+note over nova_api:authorize action 'update' policy
+note over nova_api:get update_dict['display_name']
+nova_api->database:get server by id
+activate database
+database->nova_api:done
+deactivate
+nova_api->database:update(update_dict)
+activate database
+note over database:save
+deactivate database
+
+nova_api->client:response
+deactivate nova_api
+deactivate client
