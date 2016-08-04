@@ -52,17 +52,17 @@ Draw Openstack operation sequence diagrams using [Websequence Diagrams Tool](htt
 
 ### 1. Generate diagrams
 
-To compile the diagrams on your localhost, ensure that your machine can access the Internet and the `make` tools hava been correctly installed.
+Before generate the diagrams on your localhost, ensure your machine can access the Internet and the `make` tools hava been correctly installed.
 
 ```
 make
 ```
 
-All diagrams generated will be put in `./output` by default, use your image viewer to show.
+All diagrams generated will be placed in `./output` by default.
 
 ### 2. Remove diagrams
 
-To cleanup the diagrams, just run this:
+To cleanup the diagrams, just run this as follows:
 
 ```
 make clean
