@@ -21,17 +21,18 @@ Draw Openstack operation sequence diagrams using [Websequence Diagrams Tool](htt
 - [x] [Pause](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/pause.png)
 - [x] [Unpause](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/unpause.png)
 - [x] [Suspend](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/suspend.png)
+- [x] [Resume](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/resume.png)
 - [x] [Reset Network](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/reset_network.png)
-- [ ] Cold Migrate
-- [ ] Live Miagrate
-- [ ] Shelve
-- [ ] Shelve-offload
-- [ ] Lock
-- [ ] Unlock
-- [ ] Backup
+- [x] Cold Migrate
+- [x] Live Miagrate
+- [x] Shelve
+- [x] Shelve-offload
+- [x] Lock
+- [x] Unlock
+- [x] Backup
 - [ ] Meta
-- [ ] Refresh Network
-- [ ] Rename
+- [x] Refresh Network
+- [x] Rename
 - [ ] Rescue
 - [ ] volume Attach
 - [ ] Volume Detach
