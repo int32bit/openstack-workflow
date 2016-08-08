@@ -1,0 +1,120 @@
+title backup an instance
+
+participant client
+participant nova_api
+participant database
+participant nova_compute
+participant libvirt
+participant glance_api
+
+#nova/openstack/compute/create_backup.py  _create_backup()
+client->nova_api:backup an instance
+activate client
+activate nova_api
+note over nova_api:validate "create_backup" schema
+note over nova_api:get context
+note over nova_api:authorize context
+note over nova_api:get attributes
+nova_api->database:get instance by id
+activate database
+database->nova_api:done
+deactivate database
+
+#nova/compute/api.py backup()
+note over nova_api:check policy
+note over nova_api:check instance cell
+note over nova_api:ensure instance state in[ACTIVE, \n STOPPED,PAUSED,SUSPENDED]
+
+alt if is volume_backed_instance
+note over nova_api:InvalidRequest()
+else if not volume_backed_instance
+#nova/compute/api.py _create_image()
+nova_api->nova_compute:get image meta
+activate nova_compute
+nova_compute->nova_api:done
+deactivate nova_compute
+note over nova_api:get session
+nova_api->glance_api:create image with meta
+activate glance_api
+note over glance_api:create image
+glance_api->nova_api:image meta
+deactivate glance_api
+nova_api->database:task_states=IMAGE_BACKUP
+activate database
+database->nova_api:done
+deactivate database
+
+nova_api->nova_compute:backup instance
+deactivate nova_api
+deactivate client
+activate nova_compute
+nova_compute->libvirt:get instance power state
+activate libvirt
+libvirt->nova_compute:done
+deactivate libvirt
+note over nova_compute:log a warning if power_state is not running
+note over nova_compute:notify snapshot.start
+nova_compute->database:update instance power state
+activate database
+database->nova_compute:done
+deactivate database
+nova_compute->libvirt:snapshot
+activate libvirt
+note over libvirt:get instance guest
+note over libvirt:get guest domain
+libvirt->glance_api:get snapshot by id
+activate glance_api
+glance_api->libvirt:snapshot object
+deactivate glance_api
+note over libvirt:get source type and source format
+note over libvirt:get snapshot metadata
+note over libvirt: check if we can perform live snapshot
+note over libvirt: get image snapshot backend according to image type
+note over libvirt: perform image snapshot operation
+libvirt->database: task_states=IMAGE_PENDING_UPLOAD
+activate database
+database->libvirt: done
+deactivate database
+libvirt->database: task_states=IMAGE_UPLOAD
+activate database
+database->libvirt: done
+deactivate database
+alt if not live snapshot
+    note over libvirt: create snapshot domain
+    note over libvirt: attach pci devices
+    note over libvirt: attach sriov ports
+end
+libvirt->+glance_api: update image
+note over glance_api: update image metadata
+note over glance_api: upload image
+glance_api->libvirt: done
+deactivate glance_api
+note over libvirt: log snapshot image upload complete
+libvirt->nova_compute: done
+deactivate libvirt
+
+nova_compute->database:task_states=IMAGE_UPLOADING
+activate database
+database->nova_compute:done
+deactivate database
+
+note over nova_compute:notify:snapshot.end
+note over nova_compute:get filters
+nova_compute->glance_api:get all images according to filters
+activate glance_api
+glance_api->nova_compute:images
+deactivate glance_api
+alt if num_images > rotation
+nova_compute->glance_api:deletes all backups that exceed the rotation limit
+activate glance_api
+note over glance_api:delete images
+glance_api->nova_compute:done
+end
+deactivate glance_api
+nova_compute->nova_api:image meta
+end
+deactivate nova_compute
+activate nova_api
+nova_api->client:response
+deactivate nova_api
+

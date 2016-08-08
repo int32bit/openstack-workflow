@@ -1,0 +1,83 @@
+title unshelve an instance
+
+participant client
+participant nova_api
+participant database
+participant nova_conductor
+participant nova_compute
+participant glance_api
+participant libvirt
+participant nova_scheduler
+
+#nova/api/openstack/compute/shelve.py
+client->nova_api:Restore a shelved instance
+activate client
+activate nova_api
+nova_api->+database:task_state=UNSHELVEING
+database->-nova_api:done
+
+note over nova_api:record action 'UNSHELVE' start
+nova_api->+database:get request_spec by instance uuid
+database->-nova_api:done
+
+#nova/conductor/api.py unshelve_instance()
+nova_api->+nova_conductor:unshelve_instance()
+deactivate nova_api
+deactivate client
+note over nova_conductor:get sys_meta
+nova_conductor->+glance_api:get session and image id
+glance_api->-nova_conductor:done
+
+alt if vm_state=SHELVED
+ nova_conductor->+database:task_state=POWERING_ON
+ nova_conductor->database:task_state=UNSHELVING
+ database->-nova_conductor:done
+ nova_conductor->+nova_compute:start_instance()
+ note over nova_compute:notify:power_on.start
+ note over nova_compute:get network info of an instance
+ nova_compute->+libvirt:get block device info 
+ nova_compute->libvirt:power_on the specified instance
+ libvirt->-nova_compute:done
+ deactivate nova_compute
+
+else if vm_state=SHELVED_OFFLOADED
+note over nova_conductor:EventReporter:get_image_info
+nova_conductor->+glance_api:get session and image id
+glance_api->-nova_conductor:done
+note over nova_conductor:EventReporter:schedule_instances
+note over nova_conductor:build request spec
+note over nova_conductor:populate retry
+note over nova_conductor:get filter hosts
+note over nova_conductor:get all hosts state
+nova_conductor->nova_compute:unshelve_instance()
+activate nova_compute
+deactivate nova_conductor
+note over nova_compute:notify:unshelve.start
+nova_compute->+database:task_state=SPAWNING
+database->-nova_compute:done
+nova_compute->+database:get block device mapping list
+database->-nova_compute:return bdm list
+note over nova_compute:remove redundant data
+nova_compute->+libvirt:get block device info
+libvirt->-nova_compute:Converts block device mappings \n for an instance to driver format
+
+note over nova_compute:setup network for instance
+note over nova_compute:get instance network info 
+nova_compute->+libvirt:spawn()
+libvirt->-nova_compute:done
+note over nova_compute:restore redundant data
+nova_compute->+database:power_state=current power_state
+database->+libvirt:get current power_state
+libvirt->-database:done
+nova_compute->database:vm_state=ACTIVE,task_state=None
+database->-nova_compute:done
+note over nova_compute:Delete system_metadata \n for a shelved instance
+
+nova_compute->+nova_scheduler:update instance info 
+nova_scheduler->-nova_compute:done
+
+note over nova_compute:notify:unshelve.end
+end
+deactivate nova_compute
+
+
