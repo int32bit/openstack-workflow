@@ -34,8 +34,7 @@ glance_api->nova_api:done
 deactivate glance_api
 note over nova_api:get image id
 nova_api->nova_compute:shelve_instance()
-deactivate nova_api
-deactivate client
+
 activate nova_compute
 note over nova_compute:notify shelve.start
 nova_compute->+database:task_state=SHELVEING
@@ -84,13 +83,16 @@ libvirt->-nova_compute:done
 note over nova_compute:notify:shelve.end
 else if is volume_backed_instance
 nova_api->nova_compute:shelve_offload_instance()
+deactivate nova_api
+deactivate client
 note over nova_compute:Remove a shelved instance from the hypervisor
 note over nova_compute:notify:shelve_offload.start
 nova_compute->+libvirt:power off the instance \n and get instance power state
 libvirt->-nova_compute:done
 
-note over nova_compute:Cleanup network for specified instance on host
-note over nova_compute:get network info of the instance
+nova_compute->neutron:Cleanup network for specified instance on host
+nova_compute->+neutron:get network info of the instance
+neutron->-nova_compute:done
 
 nova_compute->+libvirt:get block device info of an instance
 nova_compute->libvirt:destory()
@@ -106,3 +108,4 @@ nova_scheduler->-nova_compute:done
 note over nova_compute:notify:shelve_offload.end
 deactivate nova_compute
 
+    
