@@ -1,0 +1,58 @@
+title shelve-offload an instance
+
+participant client
+participant nova_api
+participant database
+participant nova_compute
+participant libvirt
+participant neutron
+participant nova_scheduler
+
+#nova/api/openstack/compute/shelve.py _shelve_offload()
+client->nova_api:shelve-offload an instance
+activate client
+activate nova_api
+note over nova_api:get context
+note over nova_api:authorize action 'shelve_offload' policy
+nova_api->+database:get instance by id
+database->-nova_api:done
+note over nova_api:check policy
+note over nova_api:check instance lock
+note over nova_api:ensure instance state in [SHELVED]
+nova_api->+database:task_state=SHELVING_OFFLOADING
+database->-nova_api:done
+nova_api->nova_compute:shelve_offload_instance()
+deactivate nova_api
+deactivate client
+activate nova_compute
+note over nova_compute:notify:shelve_offload.start
+nova_compute->libvirt:power_off_instance()
+nova_compute->+libvirt:get current power state
+libvirt->-nova_compute:done
+nova_compute->neutron:cleanup instance network info 
+nova_compute->+neutron:get current instance nw info
+neutron->-nova_compute:done
+nova_compute->+libvirt:get block device info
+note over libvirt:get_block_device_info
+libvirt->-nova_compute:done
+nova_compute->+libvirt:destroy()
+# nova/virt/libvirt/driver.py
+note over libvirt: get guest(libvirt client)
+note over libvirt: power off
+note over libvirt: unplug vifs
+note over libvirt: wait for power state is shutdown
+note over libvirt: disconnect from volumes
+note over libvirt: remove disks
+note over libvirt: release serial console/port
+note over libvirt: undefine domain
+libvirt->-nova_compute:done
+nova_compute->+database:get current power state
+database->-nova_compute:done
+
+nova_compute->database:host=None,node=None \n vm_state=SHELVED_OFFLOADED
+note over nova_compute:update resource tracker
+nova_compute->+nova_scheduler:delete scheduler info of an instance
+nova_scheduler->-nova_compute:done
+
+note over nova_compute:notify:shelve_offload.end
+deactivate nova_compute
