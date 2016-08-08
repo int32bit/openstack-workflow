@@ -1,0 +1,224 @@
+title live migrate a server to a new host
+participant client
+participant nova_api
+participant nova_conductor
+participant nova_scheduler
+participant database
+participant nova_compute_src
+participant libvirt_src
+participant nova_compute_dest
+participant libvirt_dest
+
+client->nova_api: os-migrateLive
+activate client
+activate nova_api
+
+# nova/api/openstack/compute/migrate_server.py
+note over nova_api: get context
+note over nova_api: authrize context: migrate_live
+note over nova_api: get migrate option from request
+nova_api->database: get instance by uuid
+database->nova_api: done
+
+# nova/compute/api.py live_migrate()
+note over nova_api: check instance lock
+note over nova_api: check instance state in [ACTIVE, PAUSED]
+nova_api->database: task_state = MIGRATING
+database->nova_api: done
+note over nova_api: record action start:live migration
+nova_api->nova_conductor: migrate_server()
+activate nova_conductor
+# nova/conductor/manager.py _live_migrate()
+nova_conductor->database: create migration record
+note over nova_conductor: check instance is active
+note over nova_conductor: check source host is up
+
+alt destination is present
+    note over nova_conductor: check source is not destination
+    note over nova_conductor: check destination host is up
+    note over nova_conductor: check destination has enough memory
+else
+    note over nova_conductor: build request spec
+    note over nova_conductor: check max retries
+    note over nova_conductor: setup instance group
+    nova_conductor->+nova_scheduler: select destinations
+    note over nova_scheduler: notify scheduler.select_destinations.start
+    note over nova_scheduler: get all hosts state
+    note over nova_scheduler: get filtered hosts
+    note over nova_scheduler: get weighed hosts from filtered hosts
+    note over nova_scheduler: choose hosts from ordered weighed hosts
+    note over nova_scheduler: notify scheduler.select_destinations.end
+    nova_scheduler->nova_conductor: selected hosts
+    deactivate nova_scheduler
+end
+note over nova_conductor: check destination host compatible with source hypervisor
+nova_conductor->+nova_compute_dest: check_can_live_migrate_destination
+note over nova_compute_dest: get src compute node info
+note over nova_compute_dest: get dest compute node info
+nova_compute_dest->+libvirt_dest: check_can_live_migrate_destination
+note over libvirt_dest: get disk available
+note over libvirt_dest: compare cpu model
+note over libvirt_dest: create shared storage test file
+libvirt_dest->nova_compute_dest: a dict contain test filename,disk_available_mb,etc.
+deactivate libvirt_dest
+nova_compute_dest->+nova_compute_src: check_can_live_migrate_source
+note over nova_compute_src: check is volume backend
+note over nova_compute_src: Transform block devices to the driver block_device format
+nova_compute_src->+libvirt_src: check_can_live_migrate_source
+note over libvirt_src: check if share storage test file
+note over libvirt_src: check if share block storage
+note over libvirt_src: get instance disk info
+alt block migration
+    note over libvirt_src: assert not share block_storage and instance path
+    note over libvirt_src: assert dest node has enouch disk
+    note over libvirt_src: assert instance without mapped volumes
+else
+    note over libvirt_src: check if valid shared storage
+end
+note over libvirt_src: get instancne path
+libvirt_src->nova_compute_src: a dict containing migration info
+deactivate libvirt_src
+nova_compute_src->nova_compute_dest: a dict containing migration info
+deactivate nova_compute_src
+nova_compute_dest->+libvirt_dest: check_can_live_migrate_destination_cleanup
+note over libvirt_dest: cleanup shared storage test file
+libvirt_dest->nova_compute_dest: done
+deactivate libvirt_dest
+nova_compute_dest->nova_conductor: migrate_data
+deactivate nova_compute_dest
+
+nova_conductor->+nova_compute_src: live_migration
+deactivate nova_conductor
+deactivate nova_api
+deactivate client
+
+nova_compute_src->database: migration.status = 'queued'
+database->nova_compute_src: done
+
+nova_compute_src->database: migration.status = 'queued'
+database->nova_compute_src: done
+
+opt block_migration
+    note over nova_compute_src: get block device info
+    note over nova_compute_src: get instance disk info
+end
+
+nova_compute_src->+nova_compute_dest: pre_live_migration
+note over nova_compute_dest: get block device info
+note over nova_compute_dest: get instance network info from network api
+note over nova_compute_dest: notify about instance usage: live_migration.pre.start
+nova_compute_dest->+libvirt_dest: pre_live_migration
+note over libvirt_dest: get meta from instance
+note over libvirt_dest: assert share block storage or share instance path or config driver format is vfat
+
+opt is not shared instance path
+    note over libvirt_dest: get instance path
+    note over libvirt_dest: mkdir instance path
+    opt has disk.info
+        note over libvirt_dest: write disk info to dest host
+    end
+    
+    opt is not shared block storage
+        note over libvirt_dest: create images and backing
+    end 
+end
+
+opt not block migration && not shared instance path
+    note over libvirt_dest: touch console.log file
+    note over libvirt_dest: fetch kernel and ramdisk if required
+end
+
+note over libvirt_dest: Connecting volumes before live migration(
+note over libvirt_dest: Plugging VIFs before live migration
+note over libvirt_dest: Store vncserver_listen and latest disk device info
+libvirt_dest->nova_compute_dest: vncserver_listen and latest disk device info
+deactivate libvirt_dest
+note over libvirt_dest: setup networks on host
+
+nova_compute_dest->+libvirt_dest: ensure_filtering_rules_for_instance()
+note over libvirt_dest: setup basic filters
+note over libvirt_dest: prepare instance filter
+note over libvirt_dest: wait for instance filter exists
+libvirt_dest->nova_compute_dest: done
+deactivate libvirt_dest
+
+note over nova_compute_dest: notify about instance usage: live_migration.pre.end
+nova_compute_dest->nova_compute_src: vncserver_listen and latest disk device info
+deactivate nova_compute_dest
+
+nova_compute_src->database: migration.status = 'running'
+database->nova_compute_src: done
+
+nova_compute_src->+libvirt_src:  live_migration()
+note over libvirt_src: check dest hostname
+note over libvirt_src: get guest domain
+note over libvirt_src: spawn a new thread
+note over libvirt_src: get libvirt migration flags
+
+alt migratable_flag is None or (listen_addrs is None and not volume)
+    note over libvirt_src: check graphics addresses can live migrate
+    note over libvirt_src: verify serial console is disabled
+    note over libvirt_src: call libvrit migrateToURI() which is legacy live method
+else
+    note over libvirt_src: update domain xml desc
+    note over libvirt_src: call libvirt migrateToURI2()
+    opt fail
+        note over libvirt_src: fallback to legacy live method
+    end
+end
+
+note over libvirt_src: sync memory and wait for migration finish
+libvirt_src->nova_compute_src: done
+deactivate libvirt_src
+
+note over libvirt_src: start post live migration
+nova_compute_src->+libvirt_src: post_live_migration
+note over  libvirt_src: get volume connector
+note over libvirt_src: disconnect volume
+libvirt_src->nova_compute_src: done
+deactivate libvirt_src
+note over nova_compute_src: deatch volumes
+
+note over nova_compute_src: get instance network info from network api
+note over nova_compute_src: notify about instance usage: live_migration._post.start
+note over nova_compute_src: unfilter instance
+note over nova_compute_src: migrate instance network start
+
+
+nova_compute_src->+libvirt_src: post_live_migration_at_source
+note over libvirt_src: Unplug VIFs from networks at source
+libvirt_src->nova_compute_src: done
+deactivate libvirt_src
+
+nova_compute_src->+nova_compute_dest: post_live_migration_at_destination
+note over nova_compute_dest: setup network on host via network api
+note over nova_compute_dest: migrate instance network finish via network api
+note over nova_compute_dest: get instance network info via network api
+
+
+note over nova_compute_dest: nofity about instance usage: live_migration.post.dest.start
+note over nova_compute_dest: Transform block devices to the driver block_device forma
+nova_compute_dest->+libvirt_dest: post_live_migration_at_destination
+note over libvirt_dest: write instance xml file to host
+libvirt_dest->nova_compute_dest: done
+deactivate libvirt_dest
+
+nova_compute_dest->database: instance.host = dest_host\ninstance.task_state = None\ninstance.node = dest_node
+database->nova_compute_dest: done
+note over nova_compute_dest: tear down networks on source host via network api
+note over nova_compute_dest: setup network on host and update dhcp via network api
+
+
+note over nova_compute_dest: notify about instance usage:live_migration.post.dest.end
+nova_compute_dest->nova_compute_src: done
+deactivate nova_compute_dest
+
+note over nova_compute_src: cleanup disks or instance path if need
+note over nova_compute_src: clear events for instance
+note over nova_compute_src: update src host available resource
+note over nova_compute_src: update scheduler instance info
+note over nova_compute_src: notify about instance usage: live_migration._post.end
+note over nova_compute_src: clean instance console tokens
+nova_compute_src->database: migration.status = completed
+database->nova_compute_src: done
+deactivate nova_compute_src

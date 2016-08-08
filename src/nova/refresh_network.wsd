@@ -1,0 +1,25 @@
+title refresh the server network
+participant client
+participant nova_api
+
+client->nova_api: create server-external-events\nevent_name='network-changed'
+activate client
+activate nova_api
+
+# nova/api/openstack/compute/server_external_events.py create()
+note over nova_api: validate schema: server_external_event.create
+note over nova_api: get nova context
+note over nova_api: authrize context: server external event create
+note over nova_api: get migrate option from request
+nova_api->database: get instance by uuid
+database->nova_api: done
+note over nova_api: assert instance host is present
+
+# nova/compute/api.py external_instance_event
+note over nova_api: collate lists by the host the affected instance is on\nand dispatch them according to host
+nova_api->nova_compute: external_instance_event()
+deactivate nova_api
+deactivate client
+nova_compute->network_api: get_instance_nw_info()
+network_api->nova_compute: done
+deactivate nova_compute
