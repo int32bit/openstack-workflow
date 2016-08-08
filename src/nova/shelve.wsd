@@ -1,0 +1,108 @@
+title shelve an instance
+
+participant client
+participant nova_api
+participant database
+participant nova_compute
+participant libvirt
+participant glance_api
+participant neutron
+participant nova_scheduler
+
+#nova/openstack/compute/shelve.py 
+client->nova_api:shelve an instance
+activate client
+activate nova_api
+note over nova_api:get context
+note over nova_api:authorize action 'shelve' policy
+nova_api->database:get instance by id
+activate database
+database->nova_api:done
+deactivate database
+note over nova_api:check policy
+note over nova_api:check instance lock
+note over nova_api:ensure instance state in [ACTIVE, \n STOPPED,PAUSED,SUSPENDED]
+nova_api->database:task_state=SHELVEING
+activate database
+database->nova_api:done
+deactivate database
+note over nova_api:record 'shelve' start
+alt if not is volume_backed_instance
+nova_api->glance_api:get image meta
+activate glance_api
+glance_api->nova_api:done
+deactivate glance_api
+note over nova_api:get image id
+nova_api->nova_compute:shelve_instance()
+deactivate nova_api
+deactivate client
+activate nova_compute
+note over nova_compute:notify shelve.start
+nova_compute->+database:task_state=SHELVEING
+database->-nova_compute:done
+nova_compute->+libvirt:power off instance and create snapshot
+note over libvirt:get instance guest
+note over libvirt:get guest domain
+libvirt->glance_api:get snapshot by id
+activate glance_api
+glance_api->libvirt:snapshot object
+deactivate glance_api
+note over libvirt:get source type and source format
+note over libvirt:get snapshot metadata
+note over libvirt: check if we can perform live snapshot
+note over libvirt: get image snapshot backend according to image type
+note over libvirt: perform image snapshot operation
+libvirt->database: task_states=IMAGE_PENDING_UPLOAD
+activate database
+database->libvirt: done
+deactivate database
+libvirt->database: task_states=IMAGE_UPLOAD
+activate database
+database->libvirt: done
+deactivate database
+alt if not live snapshot
+    note over libvirt: create snapshot domain
+    note over libvirt: attach pci devices
+    note over libvirt: attach sriov ports
+end
+libvirt->+glance_api: update image
+note over glance_api: update image metadata
+note over glance_api: upload image
+glance_api->libvirt: done
+deactivate glance_api
+note over libvirt: log snapshot image upload complete
+libvirt->nova_compute: done
+deactivate libvirt
+nova_compute->+database:vm_state=SHELVED \n task_state=None
+database->-nova_compute:done
+alt if CONF.shelved_offload_time == 0
+    nova_compute->+database:task_states=SHELVING_OFFLOADING
+    database->-nova_compute:done
+end
+nova_compute->+libvirt:get instance power state
+libvirt->-nova_compute:done
+note over nova_compute:notify:shelve.end
+else if is volume_backed_instance
+nova_api->nova_compute:shelve_offload_instance()
+note over nova_compute:Remove a shelved instance from the hypervisor
+note over nova_compute:notify:shelve_offload.start
+nova_compute->+libvirt:power off the instance \n and get instance power state
+libvirt->-nova_compute:done
+
+note over nova_compute:Cleanup network for specified instance on host
+note over nova_compute:get network info of the instance
+
+nova_compute->+libvirt:get block device info of an instance
+nova_compute->libvirt:destory()
+libvirt->-nova_compute:done
+
+nova_compute->+database:power_state=current_power_state \n host=None \n node=None \n vm_state=vm_states.SHELVED_OFFLOADED \n task_state=None
+database->-nova_compute:done
+note over nova_compute:update resource tracker
+
+nova_compute->+nova_scheduler:delete scheduler info of an instance
+nova_scheduler->-nova_compute:done
+
+note over nova_compute:notify:shelve_offload.end
+deactivate nova_compute
+
