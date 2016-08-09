@@ -1,0 +1,57 @@
+title detach a volume to a server
+
+participant client
+participant nova_api
+participant database
+participant cinder
+participant nova_compute
+participant libvirt
+
+
+client->nova_api: volume-detach
+activate client
+activate nova_api
+
+note over nova_api: get context
+note over nova_api: authorize volume-deatach action
+nova_api->database: get instance 
+nova_api->cinder: get volume by volume_id
+
+# nova/compute-api
+opt if instance.vm_state == SHELVED_OFFLOADED
+    note over nova_api: check_and_begin_detach
+    note over nova_api: get bdms by volume_id
+    loop bdm in bdms
+        note over nova_api: volume_api.terminate_connection
+        note over nova_api: volume_api.detach
+        note over nova_api: bdm.destroy
+    end
+end
+
+note over nova_api: get attachment_id
+nova_api->+nova_compute:detach_volume
+deactivate nova_api
+
+note over nova_compute: get bdm by volume and instance
+# _driver_deatah_volume
+note over nova_compute: get mp(device_name)
+note over nova_compute: get connection_info
+note over nova_compute: get encryption
+
+nova_compute->libvirt:detach_volume
+# /virt/libvirt/driver.py
+note over libvirt: get guest
+note over libvirt: get power_state 
+# /virt/libvirt/guest.py
+note over libvirt: get flags
+note over libvirt: get config for device by guest.get_disk
+note over libvirt: get device_xml by config.to_xml
+note over libvirt: change xml of server
+
+# /nova/compute-manager
+note over nova_compute: get connector
+opt if destroy_bdm
+    note over nova_compute: destroy bdm
+end
+nova_compute->cinder: terminate_connection
+nova_compute->cinder: detach

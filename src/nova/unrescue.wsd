@@ -1,0 +1,44 @@
+title unrescue
+
+participant client
+participant nova_api
+participant database
+participant neutron
+participant nova_compute
+participant libvirt
+
+
+client->nova_api: unrescue
+activate client
+activate nova_api
+
+note over nova_api: get context
+note over nova_api: authorize unrescue action
+note over nova_api: get instance
+
+note over nova_api: nova_api
+nova_api->database: task_state = UNRESCUEING
+
+note over nova_api: record unrescue star
+note over nova_api: record_action_start
+nova_api->+nova_compute: unrescue_instance
+deactivate nova_api
+
+nova_compute->neutron: get network_info
+note over nova_compute: notify unrescue start
+nova_compute->libvirt: unrescue
+note over libvirt: get unresce.xml
+
+note over libvirt: get libvirt.xml path
+note over libvirt: use unrescue.xml write to libvirt.xml
+note over libvirt: get host
+note over libvirt: destroy instance 
+note over libvirt: create domain by xml
+note over libvirt: delete unrescue.xml
+note over libvirt: remove disk endwith '.resceu'
+
+note over nova_compute: get power_state
+nova_compute->database: vm_state = ACTIVE, power_state
+
+note over nova_compute: notify rescue end
+
