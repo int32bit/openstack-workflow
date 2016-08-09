@@ -1,0 +1,38 @@
+title attach an interface to a server
+
+participant client
+participant nova_api
+participant database
+participant neutron
+participant nova_compute
+participant libvirt
+
+client->nova_api: interface-attach
+activate client
+activate nova_api
+
+note over nova_api: get context
+note over nova_api: authorize interface-attach action
+opt if body
+    note over nova_api: get attachment
+    note over nova_api: get network-id by attachment
+    note over nova_api: get port-id by attachment
+    note over nova_api: get fixed-ip by attachment
+end
+note over nova_api: get instance
+nova_api->+nova_compute: attach_interface
+nova_compute->libvirt: get bind_host_id by instance
+#nova_compute->neutron: allodcate_port_for_instance
+note over nova_compute: get a NetworkRequestList object:requested_networks
+# allocate_for_instance
+note over nova_compute: get neuron by context
+nova_compute->neutron: validate ports and networks with neutron
+note over nova_compute: validate security_groups
+nova_compute->neutron: create port if don't have a port_id 
+neutron->nova_compute: network_info
+nova_compute->database: get image_meta
+nova_compute->libvirt: attach_interface
+
+# /nova/virt/libvirt
+note over libvirt: get guest
+note over libvirt: attach device by guest

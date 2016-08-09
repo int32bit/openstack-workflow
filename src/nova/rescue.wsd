@@ -1,0 +1,53 @@
+title rescue
+
+participant client
+participant nova_api
+participant database
+participant cinder
+participant neutron
+participant nova_compute
+participant libvirt
+
+
+client->nova_api: rescue
+activate client
+activate nova_api
+
+note over nova_api: get context
+note over nova_api: authorize rescue action
+note over nova_api: get password
+note over nova_api: get instance
+note over nova_api: get rescue_iamge_ref
+
+note over nova_api: nova_api
+
+nova_api->database: get bdms by instance_uuid
+
+loop for bdm in bdms 
+    nova_api->cinder: get volume from cinder
+    nova_api->cinder: check attach
+end
+
+nova_api->database: task_state=RESCUING
+note over nova_api: record action start
+nova_api->+nova_compute: rescue_instance
+deactivate nova_api
+
+nova_compute->neutron: get network_info
+note over nova_compute: determine image to use and get image_meta
+note over nova_compute: notify rescue start
+nova_compute->libvirt: power off
+nova_compute->libvirt: rescue
+note over libvirt: get xml of instance as unrescue.xml
+note over libvirt: save unrescue.xml to instance_dir
+note over libvirt: chown console.log
+note over libvirt: get disk_info
+note over libvirt: create image
+note over libvirt: get guest_xml
+note over libvirt: power off
+note over libvirt: create domain
+
+note over nova_compute: get power_state by instance
+nova_compute->database: vm_state = RESCUED,power_state
+
+note over nova_compute: notify rescue end
