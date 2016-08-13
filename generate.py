@@ -46,7 +46,7 @@ def getSources(root="./src"):
                 sources.append(os.path.join(root, f))
     return sources
 
-def generate(src="./src", target="./output", format="png", style="modern-blue"):
+def generate(src="src", target="output", format="png", style="modern-blue"):
     for f in getSources(src):
         src_path = os.path.dirname(f)
         src_file = os.path.basename(f)

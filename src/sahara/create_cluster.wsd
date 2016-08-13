@@ -1,0 +1,165 @@
+title create a new CDH cluster
+
+participant client
+participant sahara_api
+participant database
+participant api_plugin
+participant sahara_engine
+participant engine
+participant engine_plugin
+
+
+# sahara/api/v2/clusters.py clusters_create()
+client->sahara_api:data-processing:clusters:create
+activate client
+activate sahara_api
+
+note over sahara_api: check cluster_create schema
+# sahara/service/api/v2/clusters.py create_cluster()
+note over sahara_api: get plugin by name
+note over sahara_api: get context
+sahara_api->database: conductor:create a new cluster entry
+database->sahara_api: done
+note over sahara_api: send notify: New
+opt auto security group
+    note over sahara_api: setup auto security group
+end
+note over sahara_api: setup cluster recommend config
+sahara_api->database: status = VALIDATING
+database->sahara_api: done
+note over sahara_api: check quotas
+
+sahara_api->+api_plugin: validate cluster
+note over api_plugin: ensure namenode == 1
+note over api_plugin: ensure secondary namenode == 1
+note over api_plugin: ensure datanode >= dfs_replication
+note over api_plugin: ensure resourcemanager == 1
+note over api_plugin: ensure yarn_jobhistory == 1
+note over api_plugin: ensure nodemanager > 0
+note over api_plugin: validate oozie
+note over api_plugin: validate hive
+note over api_plugin: validata hue
+note over api_plugin: validate hbase
+note over api_plugin: validate other services, flume,solr,sqoop,etc.
+api_plugin->sahara_api: done
+deactivate api_plugin
+
+# sahara/service/opts.py  RemoteOpt.provision_cluster()
+sahara_api->sahara_engine: provision_cluster
+deactivate sahara_api
+deactivate client
+activate sahara_engine
+
+# sahara/service/opts.py  OptServer.provision_cluster()
+sahara_engine->database: get cluster by id
+database->sahara_engine: done
+note over sahara_engine: get plugin by name
+note over sahara_engine: get image username
+note over sahara_engine: setup trust for cluster
+sahara_engine->database: update sahara info, infrastructure_engine,remote,etc.
+database->sahara_engine: done
+
+sahara_engine->database: status = INFRAUPDATING
+database->sahara_engine: done
+
+sahara_engine->+engine_plugin: update_infra
+note over engine_plugin: cdh plugin do nothing
+engine_plugin->sahara_engine: done
+deactivate engine_plugin
+
+sahara_engine->engine: create_cluster
+activate engine
+# sahara/sahara/service/direct_engine.py create_cluster()
+note over engine: update rollback strategy: cleanup resources = true
+engine->database: status = SPAWNING
+database->engine: done
+
+note over engine: create auto security groups
+opt cluster.anti_affinity
+    note over sahara_engine: create aiti affinity server group
+end
+note over engine: add provisioning step: Run instances
+note over engine: create and start instances
+
+engine->database: add instances to cluster
+database->engine: done
+
+engine->database: status = WAITING
+database->engine: done
+
+note over engine: await all instances to be active
+note over engine: assgine floatging ips
+note over engine: await_networks: ssh username@manager_ip "ls .ssh/authorized_keys"
+note over engine: create attached volumes
+note over engine: await all volumes to be available
+note over engine: attach volumes
+note over engine: mount volumes to instances
+
+engine->database: status = PREPARING
+database->engine: done
+
+note over engine: setup hostname
+note over engine: generate /etc/hosts
+note over engine: setup passwordless login
+note over engine: update rollback strategy: cleanup resources = false
+engine->sahara_engine: done
+deactivate engine
+
+# sahara/service/opts.py  OptServer.provision_cluster()
+sahara_engine->database: status = CONFIGURING
+database->sahara_engine: done
+note over sahara_engine: mount shares
+sahara_engine->engine_plugin: configure cluster
+activate engine_plugin
+
+# sahara/plugins/cdh/v5_4_0/deploy.py configure_cluster()
+note over engine_plugin: configure OS, yum repo,key url,etc.
+note over engine_plugin: install package
+note over engine_plugin: start cloudera-agent
+note over engine_plugin: start cloudera-manager
+note over engine_plugin: update cloudera-manager password
+note over engine_plugin: await agents
+note over engine_plugin: create mgmt service
+note over engine_plugin: create and configure services
+note over engine_plugin: deploy configs
+engine_plugin->sahara_engine: done
+deactivate engine_plugin
+
+# sahara/service/opts.py  OptServer.provision_cluster()
+note over sahara_engine: configure ntp service
+sahara_engine->database: status = STARTING
+database->sahara_engine: done
+sahara_engine->engine_plugin: start_cluster
+activate engine_plugin
+# sahara/plugins/cdh/v5_4_0/versionhandler.py start_cluster()
+opt deploy oozie
+    note over engine_plugin: install extjs
+end
+opt deploy hive
+    note over engine_plugin: configure hive
+end
+opt deploy sentry
+    note over engine_plugin: configure sentry
+end
+
+note over engine_plugin: first run: Prepare and start services in a cluster
+note over engine_plugin: configure swift
+note over engine_plugin: enable namenode ha
+note over engine_plugin: enable resourcemanager ha
+note over engine_plugin: put hive hdfs xml if require
+note over engine_plugin: create hbase common lib if require
+note over engine_plugin: start flume service if requre
+
+opt deploy hue
+    note over engine_plugin: update hue dashboard WebUI
+end
+engine_plugin->database: update cluster info
+database->engine_plugin: done
+engine_plugin->sahara_engine: done
+deactivate engine_plugin
+# sahara/service/opts.py  OptServer.provision_cluster()
+sahara_engine->database: status = ACTIVE
+database->sahara_engine: done
+
+note over sahara_engine: schedule execution pending job for cluster
+note over sahara_engine: delete trust from cluster
