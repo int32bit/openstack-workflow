@@ -23,21 +23,22 @@ Draw Openstack operation sequence diagrams using [Websequence Diagrams Tool](htt
 - [x] [Suspend](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/suspend.png)
 - [x] [Resume](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/resume.png)
 - [x] [Reset Network](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/reset_network.png)
-- [x] Cold Migrate
-- [x] Live Miagrate
-- [x] Shelve
-- [x] Shelve-offload
-- [x] Lock
-- [x] Unlock
-- [x] Backup
-- [ ] Meta
-- [x] Refresh Network
-- [x] Rename
-- [ ] Rescue
-- [ ] volume Attach
-- [ ] Volume Detach
-- [ ] Interface Attach
-- [ ] Interface Detach
+- [x] Cold Migrate(https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/migrate.png)
+- [x] Live Miagrate(https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/live_migrate.png)
+- [x] Shelve(https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/shelve.png)
+- [x] Shelve-offload(https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/shelve_offload.png)
+- [x] Unshelve(https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/unshelve.png)
+- [x] Lock(https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/lock.png)
+- [x] Unlock(https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/unlock.png)
+- [x] Backup(https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/backup.png)
+- [x] Refresh Network(https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/reset_network.png)
+- [x] [Rename](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/rename.png)
+- [x] Rescue(https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/rescue.png)
+- [x] Unrescue(https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/unrescue.png)
+- [x] volume Attach(https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/volume_attach.png)
+- [x] Volume Detach(https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/volume-detach.png)
+- [x] Interface Attach(https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/interface-attach.png)
+- [x] Interface Detach(https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/interface-detach.png)
 
 
 ### 2. Todo
