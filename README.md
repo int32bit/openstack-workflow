@@ -49,6 +49,8 @@ Draw Openstack operation sequence diagrams using [Websequence Diagrams Tool](htt
 
     * - [x] [Create cluster](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/sahara/create_cluster.png)
 
+![create cluster](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/sahara/create_cluster.png)
+
 - [ ] Magnum
 - [ ] ...
 
