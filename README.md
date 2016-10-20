@@ -149,6 +149,16 @@ note over nova_compute: notify: pause.end
 deactivate nova_compute
 ```
 
+## Contributors
+
+The following have contributed to this project:
+
+* AndiaQ
+* int32bit
+* ljjjustin
+
+Many thanks for this! (If I have forgotten you, please let me know and put you in the list of fame. :-))
+
 ## License 
 
 MIT
