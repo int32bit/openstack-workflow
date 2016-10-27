@@ -1,6 +1,8 @@
+[👉中文版本](./README.zh.md)
+
 # Openstack Sequence Diagrams
 
-Draw Openstack operation sequence diagrams using [Websequence Diagrams Tool](https://www.websequencediagrams.com/). An easiest way to track the source of Openstack and can be useful for user to learn Openstack or administer to problem troubleshooting. Noted that all these works are based on Openstack Liberty version, it may be changed in the future version, sorry that I won't notify such changes for the limit of my energy, so if you find some difference, Please check the version first.
+Draw Openstack operation sequence diagrams using [Websequence Diagrams Tool](https://www.websequencediagrams.com/). An easiest way to track the source of Openstack and can be useful for user to learn Openstack or administer to problem troubleshooting. Noted that all these works are based on Openstack Liberty version, it may be changed in the future version, be careful to use if your Openstack version is not Liberty.
 
 ## Action List
 
