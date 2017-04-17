@@ -351,4 +351,4 @@ MIT
 * [openstack-cheat-sheet](https://github.com/int32bit/openstack-cheat-sheet): 汇集所有Openstack相关的资料。
 * [int32bit's blog](http://int32bit.me/): int32bit的博客，主要专注于Openstack、Docker、Ceph相关。
 
-**--by int32bit(nova、cinder、oslo contributor).**
+**--by int32bit(OpenStack Contributor).**
