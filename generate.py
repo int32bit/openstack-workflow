@@ -8,7 +8,8 @@ import os.path
 
 from os import walk
 
-def getSequenceDiagram(wsdfile, outputFile, style = 'default'):
+
+def getSequenceDiagram(wsdfile, outputFile, style='default'):
     request = {}
     assert os.path.isfile(wsdfile)
     with open(wsdfile, "r") as f:
@@ -20,7 +21,7 @@ def getSequenceDiagram(wsdfile, outputFile, style = 'default'):
     url = urllib.urlencode(request)
 
     line = None
-    try :
+    try:
         f = urllib.urlopen("http://www.websequencediagrams.com/", url)
         line = f.readline()
         f.close()
@@ -35,8 +36,9 @@ def getSequenceDiagram(wsdfile, outputFile, style = 'default'):
         return False
 
     urllib.urlretrieve("http://www.websequencediagrams.com/" + m.group(0),
-            outputFile)
+                       outputFile)
     return True
+
 
 def getSources(root="./src"):
     sources = []
@@ -45,6 +47,7 @@ def getSources(root="./src"):
             if f.endswith(".wsd"):
                 sources.append(os.path.join(root, f))
     return sources
+
 
 def generate(src="src", target="output", format="png", style="modern-blue"):
     for f in getSources(src):
@@ -62,8 +65,11 @@ def generate(src="src", target="output", format="png", style="modern-blue"):
         else:
             print("Failed to generate %s!" % output)
 
+
 def main():
-    generate("src", "output", "png", "modern-blue") # png only, svg & pdf must register and pay 15$.
+    generate("src", "output", "png",
+             "modern-blue")  # png only, svg & pdf must register and pay 15$.
+
 
 if __name__ == "__main__":
     main()
