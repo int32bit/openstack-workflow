@@ -6,6 +6,7 @@ import urllib
 import re
 import os.path
 
+from optparse import OptionParser
 from os import walk
 
 
@@ -49,11 +50,20 @@ def getSources(root="./src"):
     return sources
 
 
-def generate(src="src", target="output", format="png", style="modern-blue"):
+def generate(src="src", target="output", format="png", style="modern-blue",
+             rebuild=False):
     for f in getSources(src):
         src_path = os.path.dirname(f)
         src_file = os.path.basename(f)
         target_path = target + src_path[src_path.index('/'):]
+
+        work_path = os.getcwd() + "/"
+        output_file_name = src_file[:src_file.rindex('.') + 1] + format
+        target_full_path = work_path + target_path + "/" + output_file_name
+        if os.path.exists(target_full_path) and not rebuild:
+            print("Output file: %s already exists, skip it" % output_file_name)
+            continue
+
         output_file = src_file[:src_file.rindex('.') + 1] + format
 
         if not os.path.isdir(target_path):
@@ -67,8 +77,15 @@ def generate(src="src", target="output", format="png", style="modern-blue"):
 
 
 def main():
+    parser = OptionParser()
+    parser.add_option("-r", "--rebuild", dest="rebuild", default=False,
+                      help="Rebuild exist output image")
+
+    (options, args) = parser.parse_args()
+    if not options.rebuild:
+        print "The current generation will not overwrite old file!"
     generate("src", "output", "png",
-             "modern-blue")  # png only, svg & pdf must register and pay 15$.
+             "modern-blue", rebuild=options.rebuild)  # png only, svg & pdf must register and pay 15$.
 
 
 if __name__ == "__main__":
