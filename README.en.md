@@ -26,7 +26,7 @@ Draw Openstack operation sequence diagrams using [Websequence Diagrams Tool](htt
 - [x] [Resume](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/resume.png)
 - [x] [Reset Network](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/reset_network.png)
 - [x] [Cold Migrate](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/migrate.png)
-- [x] [Live Miagrate](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/live_migrate.png)
+- [x] [Live Migrate](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/live_migrate.png)
 - [x] [Shelve](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/shelve.png)
 - [x] [Shelve-offload](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/shelve_offload.png)
 - [x] [Unshelve](https://raw.githubusercontent.com/int32bit/openstack-workflow/master/output/nova/unshelve.png)
