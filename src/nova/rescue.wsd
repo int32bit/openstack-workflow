@@ -17,7 +17,7 @@ note over nova_api: get context
 note over nova_api: authorize rescue action
 note over nova_api: get password
 note over nova_api: get instance
-note over nova_api: get rescue_iamge_ref
+note over nova_api: get rescue_image_ref
 
 note over nova_api: nova_api
 

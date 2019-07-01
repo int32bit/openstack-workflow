@@ -37,7 +37,7 @@ database->nova_api: done
 note over nova_api: record action 'evacuate'
 nova_api->database: create a migration record
 database->nova_api: done
-note over nova_api: nofity: evacuate
+note over nova_api: notify: evacuate
 
 #return self.compute_task_api.rebuild_instance(context,
 #                        instance=instance,
@@ -92,7 +92,7 @@ end
 
 note over nova_compute: get image meta
 note over nova_compute: get image ref url
-note over nova_compute: nofity: rebuild start
+note over nova_compute: notify: rebuild start
 nova_compute->database: task_state=REBUILDING
 database->nova_compute: done
 note over nova_compute: setup instance network on host
