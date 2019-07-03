@@ -22,7 +22,7 @@ deactivate database
 note over nova_api:check policy
 note over nova_api:check instance lock
 note over nova_api:ensure instance state in [ACTIVE, \n STOPPED,PAUSED,SUSPENDED]
-nova_api->database:task_state=SHELVEING
+nova_api->database:task_state=SHELVING
 activate database
 database->nova_api:done
 deactivate database
@@ -37,7 +37,7 @@ nova_api->nova_compute:shelve_instance()
 
 activate nova_compute
 note over nova_compute:notify shelve.start
-nova_compute->+database:task_state=SHELVEING
+nova_compute->+database:task_state=SHELVING
 database->-nova_compute:done
 nova_compute->+libvirt:power off instance and create snapshot
 note over libvirt:get instance guest
@@ -95,7 +95,7 @@ nova_compute->+neutron:get network info of the instance
 neutron->-nova_compute:done
 
 nova_compute->+libvirt:get block device info of an instance
-nova_compute->libvirt:destory()
+nova_compute->libvirt:destroy()
 libvirt->-nova_compute:done
 
 nova_compute->+database:power_state=current_power_state \n host=None \n node=None \n vm_state=vm_states.SHELVED_OFFLOADED \n task_state=None

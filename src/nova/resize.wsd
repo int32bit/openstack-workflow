@@ -19,7 +19,7 @@ activate nova_api
 note over nova_api: validation resize schema
 note over nova_api: get flavor ref
 note over nova_api: get context
-note over nova_api: authrize action resize policy
+note over nova_api: authorize action resize policy
 nova_api->nova_api: get server by uuid
 note over nova_api: cache db instance
 
@@ -107,7 +107,7 @@ deactivate database
 nova_compute_src->+database: task_states=RESIZE_MIGRATING
 database->nova_compute_src: done
 deactivate database
-note over nova_compute_src: nofity: resize.start
+note over nova_compute_src: notify: resize.start
 nova_compute_src->+database: get block device mapping list
 database->nova_compute_src:done
 deactivate database
@@ -137,7 +137,7 @@ end
 note over libvirt: power off instance
 
 note over libvirt: get block device info
-note over libvirt: disconnet volumes
+note over libvirt: disconnect volumes
 note over libvirt: rename instance_base dir to instance_base_resize
 note over libvirt: create new instance_base dir
 
@@ -181,7 +181,7 @@ nova_compute_dest->+database: task_state = RESIZE_FINISH
 database->nova_compute_dest: done
 deactivate database
 
-note over nova_compute_dest: nofity: finish_resize.start
+note over nova_compute_dest: notify: finish_resize.start
 nova_compute_dest->libvirt: get instance block device info
 
 nova_compute_dest->+libvirt: finish_migration
@@ -212,7 +212,7 @@ nova_compute_src->+database: task_states=RESIZE_FINISH
 database->nova_compute_src: done
 deactivate database
 note over nova_compute_dest: update scheduler instance info
-note over nova_compute_dest: nofity: finish_resize.end
+note over nova_compute_dest: notify: finish_resize.end
 note over nova_compute_dest: quota commit
 deactivate nova_compute_dest
 

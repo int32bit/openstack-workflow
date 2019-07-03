@@ -17,7 +17,7 @@ note over nova_api: authorize unrescue action
 note over nova_api: get instance
 
 note over nova_api: nova_api
-nova_api->database: task_state = UNRESCUEING
+nova_api->database: task_state = UNRESCUING
 
 note over nova_api: record unrescue star
 note over nova_api: record_action_start
@@ -35,7 +35,7 @@ note over libvirt: get host
 note over libvirt: destroy instance 
 note over libvirt: create domain by xml
 note over libvirt: delete unrescue.xml
-note over libvirt: remove disk endwith '.resceu'
+note over libvirt: remove disk endwith '.rescue'
 
 note over nova_compute: get power_state
 nova_compute->database: vm_state = ACTIVE, power_state

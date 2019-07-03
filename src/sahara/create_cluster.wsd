@@ -38,9 +38,9 @@ note over api_plugin: ensure yarn_jobhistory == 1
 note over api_plugin: ensure nodemanager > 0
 note over api_plugin: validate oozie
 note over api_plugin: validate hive
-note over api_plugin: validata hue
+note over api_plugin: validate hue
 note over api_plugin: validate hbase
-note over api_plugin: validate other services, flume,solr,sqoop,etc.
+note over api_plugin: validate other services, flume, solr, sqoop,etc.
 api_plugin->sahara_api: done
 deactivate api_plugin
 
@@ -76,7 +76,7 @@ database->engine: done
 
 note over engine: create auto security groups
 opt cluster.anti_affinity
-    note over sahara_engine: create aiti affinity server group
+    note over sahara_engine: create anti affinity server group
 end
 note over engine: add provisioning step: Run instances
 note over engine: create and start instances
@@ -88,7 +88,7 @@ engine->database: status = WAITING
 database->engine: done
 
 note over engine: await all instances to be active
-note over engine: assgine floatging ips
+note over engine: assign floating ips
 note over engine: await_networks: ssh username@manager_ip "ls .ssh/authorized_keys"
 note over engine: create attached volumes
 note over engine: await all volumes to be available
@@ -148,7 +148,7 @@ note over engine_plugin: enable namenode ha
 note over engine_plugin: enable resourcemanager ha
 note over engine_plugin: put hive hdfs xml if require
 note over engine_plugin: create hbase common lib if require
-note over engine_plugin: start flume service if requre
+note over engine_plugin: start flume service if require
 
 opt deploy hue
     note over engine_plugin: update hue dashboard WebUI

@@ -11,13 +11,13 @@ activate nova_api
 # nova/api/openstack/compute/servers.py _action_create_image()
 note over nova_api: validation create image schema
 note over nova_api: get context
-note over nova_api: authrize action 'create_image' policy
+note over nova_api: authorize action 'create_image' policy
 note over nova_api: check image metadata properties
 nova_api->nova_api: get server by uuid
 note over nova_api: cache db instance
 
 alt if is volume backend instance
-    note over nova_api: authrize action 'create_image:allow_volume_backed' policy
+    note over nova_api: authorize action 'create_image:allow_volume_backed' policy
     note over nova_api: ensure instance state is ACTIVE or STOPPED
     note over nova_api: initialize new metadata \nfor a snapshot of the given \ninstance
     alt if vm.state is active
@@ -65,7 +65,7 @@ alt if is volume backend instance
 else if not volume backend instance
     note over nova_api: check policy
     note over nova_api: check instance cell
-    note over nova_api: check instance state in [ACTIVE,\nSPOPPTED,PAUSED,SUSPENDED]
+    note over nova_api: check instance state in [ACTIVE,\nSTOPPED,PAUSED,SUSPENDED]
     note over nova_api: initialize new metadata \nfor a snapshot of the given \ninstance
     nova_api->+glance_api: create image with image meta
     note over glance_api: create image
@@ -80,11 +80,11 @@ else if not volume backend instance
     nova_compute->+libvirt: get instance power state
     libvirt->nova_compute: done
     deactivate libvirt
-    note over nova_compute: log a warning if power state is not RUNNIGN
+    note over nova_compute: log a warning if power state is not RUNNING
     nova_compute->+database: update instance power state
     database->nova_compute: done
     deactivate database
-    note over nova_compute: nofity: snapshot.start
+    note over nova_compute: notify: snapshot.start
     nova_compute->+libvirt: snapshot
     note over libvirt: get instance guest
     note over libvirt: get domain
@@ -119,6 +119,6 @@ else if not volume backend instance
     nova_api->+database: task_states=None
     database->nova_api: done
     deactivate database
-    note over nova_compute: nofity: snapshot.end
+    note over nova_compute: notify: snapshot.end
 end
 nova_api->client: response

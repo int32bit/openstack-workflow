@@ -44,7 +44,7 @@ libvirt->nova_compute: block device info
 
 nova_compute->neutron: get instance network info
 neutron->nova_compute: instance network info
-note over nova_compute: notity reboot start
+note over nova_compute: notify reboot start
 nova_compute->libvirt: get power state
 note over libvirt: get info by instance
 note over libvirt: retrieve state from instance info

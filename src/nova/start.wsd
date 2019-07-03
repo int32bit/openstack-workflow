@@ -58,7 +58,7 @@ end
 note over libvirt: re-establish any and all volume connections
 note over libvirt: get neutron events(None here)
 note over libvirt: plug vifs
-note over libvirt: set up firwall filter
+note over libvirt: set up firewall filter
 note over libvirt: create domain
 note over libvirt: start/launch domain
 note over libvirt: apply instance filter

@@ -9,7 +9,7 @@ activate client
 activate nova_api
 
 # nova/api/openstack/compute/pause_server.py _pause()
-note over nova_api: authrize context
+note over nova_api: authorize context
 nova_api->database: get instance by uuid
 database->nova_api: done
 
