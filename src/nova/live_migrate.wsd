@@ -15,7 +15,7 @@ activate nova_api
 
 # nova/api/openstack/compute/migrate_server.py
 note over nova_api: get context
-note over nova_api: authrize context: migrate_live
+note over nova_api: authorize context: migrate_live
 note over nova_api: get migrate option from request
 nova_api->database: get instance by uuid
 database->nova_api: done
@@ -70,12 +70,12 @@ note over libvirt_src: check if share block storage
 note over libvirt_src: get instance disk info
 alt block migration
     note over libvirt_src: assert not share block_storage and instance path
-    note over libvirt_src: assert dest node has enouch disk
+    note over libvirt_src: assert dest node has enough disk
     note over libvirt_src: assert instance without mapped volumes
 else
     note over libvirt_src: check if valid shared storage
 end
-note over libvirt_src: get instancne path
+note over libvirt_src: get instance path
 libvirt_src->nova_compute_src: a dict containing migration info
 deactivate libvirt_src
 nova_compute_src->nova_compute_dest: a dict containing migration info
@@ -158,7 +158,7 @@ note over libvirt_src: get libvirt migration flags
 alt migratable_flag is None or (listen_addrs is None and not volume)
     note over libvirt_src: check graphics addresses can live migrate
     note over libvirt_src: verify serial console is disabled
-    note over libvirt_src: call libvrit migrateToURI() which is legacy live method
+    note over libvirt_src: call libvirt migrateToURI() which is legacy live method
 else
     note over libvirt_src: update domain xml desc
     note over libvirt_src: call libvirt migrateToURI2()
@@ -177,7 +177,7 @@ note over  libvirt_src: get volume connector
 note over libvirt_src: disconnect volume
 libvirt_src->nova_compute_src: done
 deactivate libvirt_src
-note over nova_compute_src: deatch volumes
+note over nova_compute_src: detach volumes
 
 note over nova_compute_src: get instance network info from network api
 note over nova_compute_src: notify about instance usage: live_migration._post.start
@@ -196,7 +196,7 @@ note over nova_compute_dest: migrate instance network finish via network api
 note over nova_compute_dest: get instance network info via network api
 
 
-note over nova_compute_dest: nofity about instance usage: live_migration.post.dest.start
+note over nova_compute_dest: notify about instance usage: live_migration.post.dest.start
 note over nova_compute_dest: Transform block devices to the driver block_device forma
 nova_compute_dest->+libvirt_dest: post_live_migration_at_destination
 note over libvirt_dest: write instance xml file to host

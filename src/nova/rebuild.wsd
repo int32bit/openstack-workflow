@@ -19,7 +19,7 @@ note over nova_api: validation rebuild schema
 note over nova_api: get image ref
 note over nova_api: get or generate admin password
 note over nova_api: get context
-note over nova_api: authrize action rebuild policy
+note over nova_api: authorize action rebuild policy
 nova_api->nova_api: get server by uuid
 note over nova_api: cache db instance
 note over nova_api: build rebuild_kwargs
@@ -121,7 +121,7 @@ alt recreate with the same disk
     note over nova_compute: store origin image ref url
     note over nova_compute: notify usage exists
     note over nova_compute: notify rebuild.start
-    nova_compute->database:task_stats=REBUIDING
+    nova_compute->database:task_stats=REBUILDING
     database->nova_compute: done
     nova_compute->+neutron: setup networks on host(only nova-network)
     neutron->nova_compute: done
@@ -150,7 +150,7 @@ else purge all existing data
     note over nova_compute: store origin image ref url
     note over nova_compute: notify usage exists
     note over nova_compute: notify rebuild.start
-    nova_compute->database:task_stats=REBUIDING
+    nova_compute->database:task_stats=REBUILDING
     database->nova_compute: done
     nova_compute->+neutron: get network info for instance
     neutron->nova_compute: instance's network info
@@ -240,6 +240,6 @@ alt instance's original state is stopped
 end
 
 note over nova_compute: update scheduler instance info
-note over nova_compute: nofity rebuild.end
+note over nova_compute: notify rebuild.end
 
 deactivate nova_compute

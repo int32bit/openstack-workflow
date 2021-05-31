@@ -22,7 +22,7 @@ end
 note over nova_api: get instance
 nova_api->+nova_compute: attach_interface
 nova_compute->libvirt: get bind_host_id by instance
-#nova_compute->neutron: allodcate_port_for_instance
+#nova_compute->neutron: allocate_port_for_instance
 note over nova_compute: get a NetworkRequestList object:requested_networks
 # allocate_for_instance
 note over nova_compute: get neuron by context

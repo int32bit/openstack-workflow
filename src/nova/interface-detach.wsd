@@ -22,7 +22,7 @@ note over nova_compute: get condemned
 nova_compute->libvirt: detach_interface(instance,condemned)
 
 note over libvirt: get guest
-note over libvirt: ger config
+note over libvirt: get config
 note over libvirt: get power_state
 note over libvirt: get live
 note over libvirt: get xml by config

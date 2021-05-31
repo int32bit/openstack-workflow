@@ -9,7 +9,7 @@ activate nova_api
 # nova/api/openstack/compute/server_external_events.py create()
 note over nova_api: validate schema: server_external_event.create
 note over nova_api: get nova context
-note over nova_api: authrize context: server external event create
+note over nova_api: authorize context: server external event create
 note over nova_api: get migrate option from request
 nova_api->database: get instance by uuid
 database->nova_api: done

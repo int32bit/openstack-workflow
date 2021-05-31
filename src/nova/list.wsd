@@ -27,7 +27,7 @@ nova_api->+nova_compute_api:get_all()
 note over nova_compute_api:check search options
 note over nova_compute_api: build filter mapping
 note over nova_compute_api:copy from search options and remap
-nova_compute_api->nova_compute_api:call _get_intances_by_filter()
+nova_compute_api->nova_compute_api:call _get_instances_by_filter()
 note over nova_compute_api:extend expected attrs
 
 # nova/objects/instance.py

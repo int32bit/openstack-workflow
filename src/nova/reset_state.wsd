@@ -10,7 +10,7 @@ activate nova_api
 
 # nova/api/openstack/compute/legacy_v2/contrib/admin_actions.py _reset_network()
 note over nova_api: valid schema
-note over nova_api: authrize context
+note over nova_api: authorize context
 nova_api->database: get instance by uuid
 database->nova_api: done
 nova_api->+database: vm_state = newState\ntask_state=None

@@ -13,7 +13,7 @@ participant nova_scheduler
 client->nova_api:Restore a shelved instance
 activate client
 activate nova_api
-nova_api->+database:task_state=UNSHELVEING
+nova_api->+database:task_state=UNSHELVING
 database->-nova_api:done
 
 note over nova_api:record action 'UNSHELVE' start

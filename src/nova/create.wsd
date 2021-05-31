@@ -61,7 +61,7 @@ note over nova_api: check num instances quota
 note over nova_api: populate instance for create
 note over nova_api: generate instance uuid
 note over nova_api: vm_state=BUILDING\ntask_state=SCHEDULING
-note over nova_api: pupulate instance name and hostname
+note over nova_api: populate instance name and hostname
 
 # database
 nova_api->database:create db entry for new instance
@@ -70,7 +70,7 @@ nova_api->database:create block device mapping
 note over nova_api:check server group quota
 note over nova_api:check limit
 note over nova_api: instance group add member
-note over nova_api:send BUIDING state update notification
+note over nova_api:send BUILDING state update notification
 note over nova_api: quota commit
 
 # _create_instance()
@@ -113,7 +113,7 @@ note over nova_scheduler: chose hosts from weighed hosts
 nova_scheduler->nova_conductor:return selected hosts
 deactivate nova_scheduler
 # nova/conductor/manager.py
-note over nova_conductor: connecte instances and hosts
+note over nova_conductor: connect instances and hosts
 note over nova_conductor: iterate all the instances
 # nova/compute.rpcapi.py
 note over nova_conductor: prepare rpc client
@@ -129,7 +129,7 @@ note over nova_compute: get available node
 note over nova_compute: notify about instance usage
 note over nova_compute: get resource tracker
 note over nova_compute:  resource tracker claim resource
-note over nova_compute: validata instance group policy
+note over nova_compute: validate instance group policy
 
 # nova/compute/manager.py _build_network_for_instance
 note over nova_compute: build network info for instance
@@ -157,7 +157,7 @@ note over nova_compute:ensure root device name \n and is set to first block devi
 nova_compute->database:vm_state=BUILDING\n task_state=BLOCK_DEVICE_MAPPING
 note over nova_compute:setup the block device for an instance
 
-nova_compute->database:vm_state=BUIDING\ntask_state=SPAWNING
+nova_compute->database:vm_state=BUILDING\ntask_state=SPAWNING
 
 ## libvirt 
 nova_compute->libvirt:spawn
